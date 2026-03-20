@@ -5,6 +5,7 @@ import DeviceView from '@/views/DeviceView.vue';
 import LoginView from '@/views/LoginView.vue';
 import MenuView from '@/views/MenuView.vue';
 import MemberView from '@/views/MemberView.vue';
+import OrderDetailView from '@/views/OrderDetailView.vue';
 import OrderView from '@/views/OrderView.vue';
 import ProductView from '@/views/ProductView.vue';
 import RoleView from '@/views/RoleView.vue';
@@ -48,6 +49,14 @@ const routes: RouteRecordRaw[] = [
         path: 'orders',
         name: 'orders',
         component: OrderView,
+      },
+      {
+        path: 'orders/:id',
+        name: 'order-detail',
+        component: OrderDetailView,
+        meta: {
+          accessPath: '/orders',
+        },
       },
       {
         path: 'devices',
@@ -123,7 +132,8 @@ router.beforeEach(async (to) => {
     };
   }
 
-  if (!authStore.canAccess(to.path)) {
+  const accessPath = typeof to.meta.accessPath === 'string' ? to.meta.accessPath : to.path;
+  if (!authStore.canAccess(accessPath)) {
     return authStore.firstMenuPath;
   }
 

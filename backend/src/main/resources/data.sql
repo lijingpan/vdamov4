@@ -33,6 +33,33 @@ INSERT INTO da_order (
 (90003, 'OD202603200003', 54, 5401, 362223, 42000, 2000, 40000, 0, 'IN_PROGRESS', 'UNPAID', 2, CURRENT_TIMESTAMP),
 (90004, 'OD202603190001', 54, 5402, NULL, 18800, 1800, 17000, 17000, 'COMPLETED', 'PAID', 0, DATEADD('DAY', -1, CURRENT_TIMESTAMP));
 
+INSERT INTO da_order_item (
+    id, order_id, store_id, product_id, item_name, item_code, unit_price_in_cent, quantity,
+    original_amount_in_cent, discount_amount_in_cent, payable_amount_in_cent, item_status, append_round, remark
+) VALUES
+(91001, 90001, 2, 1169, 'Signature Milk Tea', 'signature-milk-tea', 1990, 2, 3980, 380, 3600, 'CONFIRMED', 0, 'Less sugar'),
+(91002, 90001, 2, NULL, 'Wagyu Sliced Beef', 'wagyu-sliced-beef', 6200, 1, 6200, 820, 5380, 'CONFIRMED', 1, 'Append item'),
+(91003, 90002, 2, NULL, 'Spicy Soup Base', 'spicy-soup-base', 6800, 1, 6800, 300, 6500, 'SERVED', 0, NULL),
+(91004, 90002, 2, NULL, 'Snowflake Beef', 'snowflake-beef', 8800, 1, 8800, 300, 8500, 'SERVED', 0, NULL),
+(91005, 90003, 54, 1165, 'Buffet 388', 'buffet-388', 35000, 1, 35000, 2000, 33000, 'CONFIRMED', 0, NULL),
+(91006, 90003, 54, NULL, 'Premium Seafood Platter', 'premium-seafood-platter', 9000, 1, 9000, 0, 9000, 'CONFIRMED', 1, 'Append from waiter'),
+(91007, 90004, 54, NULL, 'Family Set Meal', 'family-set-meal', 18800, 1, 18800, 1800, 17000, 'SERVED', 0, NULL);
+
+INSERT INTO da_order_append_log (
+    id, order_id, store_id, append_round, action_type, append_item_count, append_amount_in_cent, operate_time, operator_name, note
+) VALUES
+(92001, 90001, 2, 1, 'APPEND_ITEM', 1, 5380, DATEADD('MINUTE', 8, CURRENT_TIMESTAMP), 'Alice', 'Customer added beef'),
+(92002, 90003, 54, 1, 'APPEND_ITEM', 1, 9000, DATEADD('MINUTE', 12, CURRENT_TIMESTAMP), 'Nok', 'Add seafood'),
+(92003, 90003, 54, 2, 'ADJUST_PRICE', 0, 0, DATEADD('MINUTE', 20, CURRENT_TIMESTAMP), 'Nok', 'Kitchen out of stock compensation');
+
+INSERT INTO da_payment_record (
+    id, order_id, store_id, payment_no, payment_method, payment_channel,
+    paid_amount_in_cent, change_amount_in_cent, payment_status, paid_time, cashier_name, remark
+) VALUES
+(93001, 90002, 2, 'PM202603200001', 'CASH', 'OFFLINE', 10000, 0, 'SUCCESS', DATEADD('MINUTE', 25, CURRENT_TIMESTAMP), 'Bob', 'first payment'),
+(93002, 90002, 2, 'PM202603200002', 'CARD', 'POS', 5000, 0, 'SUCCESS', DATEADD('MINUTE', 40, CURRENT_TIMESTAMP), 'Bob', 'checkout'),
+(93003, 90004, 54, 'PM202603190001', 'PROMPTPAY', 'THAI_QR', 17000, 0, 'SUCCESS', DATEADD('DAY', -1, CURRENT_TIMESTAMP), 'Mint', 'paid in full');
+
 INSERT INTO da_user (id, username, password, display_name, enabled) VALUES
 (1, 'admin', 'admin123', 'System Admin', TRUE),
 (2, 'store.manager', 'store123', 'Store Manager', TRUE);

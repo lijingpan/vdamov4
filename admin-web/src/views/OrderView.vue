@@ -93,6 +93,13 @@
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" :label="t('order.columns.createdAt')" min-width="180" />
+        <el-table-column :label="t('order.columns.actions')" min-width="120" fixed="right">
+          <template #default="{ row }">
+            <el-button type="primary" link @click="goToDetail(row.id)">
+              {{ t('order.actions.viewDetail') }}
+            </el-button>
+          </template>
+        </el-table-column>
       </el-table>
     </div>
   </PageShell>
@@ -100,6 +107,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import type { OrderSummary } from '@/api/orders';
 import { fetchOrders } from '@/api/orders';
@@ -108,6 +116,7 @@ import { fetchStores } from '@/api/stores';
 import PageShell from '@/components/PageShell.vue';
 
 const { t } = useI18n();
+const router = useRouter();
 
 const loading = ref(false);
 const errorMessage = ref('');
@@ -168,12 +177,17 @@ function resetFilters() {
   keyword.value = '';
 }
 
+function goToDetail(orderId: number) {
+  router.push(`/orders/${orderId}`);
+}
+
 async function loadOrders() {
   loading.value = true;
   errorMessage.value = '';
   try {
     orderRows.value = await fetchOrders({
       storeId: storeId.value,
+      status: statusFilter.value || undefined,
     });
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : t('common.requestFailed');

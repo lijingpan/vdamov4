@@ -43,6 +43,15 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(4030, messageHelper.get("error.auth.forbidden")));
     }
 
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNotFound(NotFoundException ex) {
+        String message = ex.getMessage() == null || ex.getMessage().isBlank()
+                ? messageHelper.get("error.notFound")
+                : ex.getMessage();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error(4040, message));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleDefault(Exception ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

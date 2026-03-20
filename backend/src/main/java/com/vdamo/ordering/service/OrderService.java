@@ -1,45 +1,67 @@
 package com.vdamo.ordering.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.vdamo.ordering.common.exception.NotFoundException;
+import com.vdamo.ordering.common.i18n.MessageHelper;
 import com.vdamo.ordering.entity.MemberEntity;
+import com.vdamo.ordering.entity.OrderAppendLogEntity;
 import com.vdamo.ordering.entity.OrderEntity;
+import com.vdamo.ordering.entity.OrderItemEntity;
+import com.vdamo.ordering.entity.PaymentRecordEntity;
 import com.vdamo.ordering.entity.StoreEntity;
 import com.vdamo.ordering.entity.TableEntity;
 import com.vdamo.ordering.mapper.MemberMapper;
+import com.vdamo.ordering.mapper.OrderAppendLogMapper;
+import com.vdamo.ordering.mapper.OrderItemMapper;
 import com.vdamo.ordering.mapper.OrderMapper;
+import com.vdamo.ordering.mapper.PaymentRecordMapper;
 import com.vdamo.ordering.mapper.StoreMapper;
 import com.vdamo.ordering.mapper.TableMapper;
+import com.vdamo.ordering.model.OrderDetailResponse;
 import com.vdamo.ordering.model.OrderSummary;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 public class OrderService {
 
     private final OrderMapper orderMapper;
+    private final OrderItemMapper orderItemMapper;
+    private final OrderAppendLogMapper orderAppendLogMapper;
+    private final PaymentRecordMapper paymentRecordMapper;
     private final StoreMapper storeMapper;
     private final TableMapper tableMapper;
     private final MemberMapper memberMapper;
     private final PermissionService permissionService;
+    private final MessageHelper messageHelper;
 
     public OrderService(
             OrderMapper orderMapper,
+            OrderItemMapper orderItemMapper,
+            OrderAppendLogMapper orderAppendLogMapper,
+            PaymentRecordMapper paymentRecordMapper,
             StoreMapper storeMapper,
             TableMapper tableMapper,
             MemberMapper memberMapper,
-            PermissionService permissionService
+            PermissionService permissionService,
+            MessageHelper messageHelper
     ) {
         this.orderMapper = orderMapper;
+        this.orderItemMapper = orderItemMapper;
+        this.orderAppendLogMapper = orderAppendLogMapper;
+        this.paymentRecordMapper = paymentRecordMapper;
         this.storeMapper = storeMapper;
         this.tableMapper = tableMapper;
         this.memberMapper = memberMapper;
         this.permissionService = permissionService;
+        this.messageHelper = messageHelper;
     }
 
-    public List<OrderSummary> list(Long storeId) {
+    public List<OrderSummary> list(Long storeId, String keyword, String orderStatus, String paymentStatus) {
         List<Long> storeScope = permissionService.currentStoreIds();
         if (storeId != null) {
             permissionService.assertStoreAccess(storeId);
@@ -51,6 +73,22 @@ public class OrderService {
                 .orderByDesc(OrderEntity::getId);
         if (storeId != null) {
             wrapper.eq(OrderEntity::getStoreId, storeId);
+        }
+        if (StringUtils.hasText(orderStatus)) {
+            wrapper.eq(OrderEntity::getOrderStatus, orderStatus.trim());
+        }
+        if (StringUtils.hasText(paymentStatus)) {
+            wrapper.eq(OrderEntity::getPaymentStatus, paymentStatus.trim());
+        }
+        if (StringUtils.hasText(keyword)) {
+            String normalizedKeyword = keyword.trim();
+            Long orderIdKeyword = parseOrderId(normalizedKeyword);
+            wrapper.and(query -> {
+                query.like(OrderEntity::getOrderNo, normalizedKeyword);
+                if (orderIdKeyword != null) {
+                    query.or().eq(OrderEntity::getId, orderIdKeyword);
+                }
+            });
         }
 
         List<OrderEntity> orders = orderMapper.selectList(wrapper);
@@ -85,6 +123,126 @@ public class OrderService {
                 .toList();
     }
 
+    public OrderDetailResponse getDetail(Long orderId) {
+        OrderEntity order = orderMapper.selectById(orderId);
+        if (order == null) {
+            throw new NotFoundException(messageHelper.get("error.order.notFound"));
+        }
+        permissionService.assertStoreAccess(order.getStoreId());
+
+        StoreEntity store = storeMapper.selectById(order.getStoreId());
+        TableEntity table = tableMapper.selectById(order.getTableId());
+        MemberEntity member = order.getMemberId() == null ? null : memberMapper.selectById(order.getMemberId());
+
+        List<OrderItemEntity> orderItems = orderItemMapper.selectList(
+                new LambdaQueryWrapper<OrderItemEntity>()
+                        .eq(OrderItemEntity::getOrderId, order.getId())
+                        .eq(OrderItemEntity::getStoreId, order.getStoreId())
+                        .orderByAsc(OrderItemEntity::getAppendRound)
+                        .orderByAsc(OrderItemEntity::getId));
+
+        List<OrderAppendLogEntity> appendLogs = orderAppendLogMapper.selectList(
+                new LambdaQueryWrapper<OrderAppendLogEntity>()
+                        .eq(OrderAppendLogEntity::getOrderId, order.getId())
+                        .eq(OrderAppendLogEntity::getStoreId, order.getStoreId())
+                        .orderByAsc(OrderAppendLogEntity::getAppendRound)
+                        .orderByAsc(OrderAppendLogEntity::getId));
+
+        List<PaymentRecordEntity> paymentRecords = paymentRecordMapper.selectList(
+                new LambdaQueryWrapper<PaymentRecordEntity>()
+                        .eq(PaymentRecordEntity::getOrderId, order.getId())
+                        .eq(PaymentRecordEntity::getStoreId, order.getStoreId())
+                        .orderByAsc(PaymentRecordEntity::getPaidTime)
+                        .orderByAsc(PaymentRecordEntity::getId));
+
+        List<OrderDetailResponse.Item> itemDetails = orderItems.stream()
+                .map(item -> new OrderDetailResponse.Item(
+                        item.getId(),
+                        item.getProductId(),
+                        item.getItemName(),
+                        item.getItemCode(),
+                        defaultInt(item.getUnitPriceInCent()),
+                        defaultInt(item.getQuantity()),
+                        defaultInt(item.getOriginalAmountInCent()),
+                        defaultInt(item.getDiscountAmountInCent()),
+                        defaultInt(item.getPayableAmountInCent()),
+                        item.getItemStatus(),
+                        defaultInt(item.getAppendRound()),
+                        item.getRemark()))
+                .toList();
+
+        List<OrderDetailResponse.AppendLog> appendLogDetails = appendLogs.stream()
+                .map(log -> new OrderDetailResponse.AppendLog(
+                        log.getId(),
+                        defaultInt(log.getAppendRound()),
+                        log.getActionType(),
+                        defaultInt(log.getAppendItemCount()),
+                        defaultInt(log.getAppendAmountInCent()),
+                        log.getOperateTime(),
+                        log.getOperatorName(),
+                        log.getNote()))
+                .toList();
+
+        List<OrderDetailResponse.PaymentRecord> paymentDetails = paymentRecords.stream()
+                .map(payment -> new OrderDetailResponse.PaymentRecord(
+                        payment.getId(),
+                        payment.getPaymentNo(),
+                        payment.getPaymentMethod(),
+                        payment.getPaymentChannel(),
+                        defaultInt(payment.getPaidAmountInCent()),
+                        defaultInt(payment.getChangeAmountInCent()),
+                        payment.getPaymentStatus(),
+                        payment.getPaidTime(),
+                        payment.getCashierName(),
+                        payment.getRemark()))
+                .toList();
+
+        int itemPayableAmount = orderItems.stream()
+                .map(OrderItemEntity::getPayableAmountInCent)
+                .filter(Objects::nonNull)
+                .reduce(0, Integer::sum);
+
+        int appendAmount = appendLogs.stream()
+                .map(OrderAppendLogEntity::getAppendAmountInCent)
+                .filter(Objects::nonNull)
+                .reduce(0, Integer::sum);
+
+        int paymentRecordAmount = paymentRecords.stream()
+                .map(PaymentRecordEntity::getPaidAmountInCent)
+                .filter(Objects::nonNull)
+                .reduce(0, Integer::sum);
+
+        int payableAmount = defaultInt(order.getPayableAmountInCent());
+        int paidAmount = defaultInt(order.getPaidAmountInCent());
+
+        return new OrderDetailResponse(
+                new OrderDetailResponse.Header(
+                        order.getId(),
+                        order.getOrderNo(),
+                        order.getStoreId(),
+                        store == null ? "" : store.getName(),
+                        order.getTableId(),
+                        table == null ? "" : table.getTableName(),
+                        order.getMemberId(),
+                        member == null ? null : member.getDisplayName(),
+                        order.getOrderStatus(),
+                        order.getPaymentStatus(),
+                        defaultInt(order.getAppendCount()),
+                        order.getCreateTime()),
+                itemDetails,
+                appendLogDetails,
+                paymentDetails,
+                new OrderDetailResponse.AmountSummary(
+                        defaultInt(order.getOriginalAmountInCent()),
+                        defaultInt(order.getDiscountAmountInCent()),
+                        payableAmount,
+                        paidAmount,
+                        Math.max(payableAmount - paidAmount, 0),
+                        itemPayableAmount,
+                        appendAmount,
+                        paymentRecordAmount));
+    }
+
     private OrderSummary toSummary(
             OrderEntity entity,
             Map<Long, String> storeNameMap,
@@ -113,5 +271,13 @@ public class OrderService {
 
     private int defaultInt(Integer value) {
         return value == null ? 0 : value;
+    }
+
+    private Long parseOrderId(String keyword) {
+        try {
+            return Long.parseLong(keyword);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
     }
 }

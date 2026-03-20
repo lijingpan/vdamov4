@@ -99,6 +99,69 @@ CREATE TABLE da_order (
     test_flag INT DEFAULT 0
 );
 
+CREATE TABLE da_order_item (
+    id BIGINT PRIMARY KEY,
+    order_id BIGINT NOT NULL,
+    store_id BIGINT NOT NULL,
+    product_id BIGINT,
+    item_name VARCHAR(100) NOT NULL,
+    item_code VARCHAR(64),
+    unit_price_in_cent INT NOT NULL,
+    quantity INT NOT NULL,
+    original_amount_in_cent INT NOT NULL,
+    discount_amount_in_cent INT NOT NULL,
+    payable_amount_in_cent INT NOT NULL,
+    item_status VARCHAR(32) NOT NULL,
+    append_round INT NOT NULL,
+    remark VARCHAR(255),
+    creator VARCHAR(32) DEFAULT 'system',
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updater VARCHAR(32) DEFAULT 'system',
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    del_flag INT DEFAULT 1,
+    test_flag INT DEFAULT 0
+);
+
+CREATE TABLE da_order_append_log (
+    id BIGINT PRIMARY KEY,
+    order_id BIGINT NOT NULL,
+    store_id BIGINT NOT NULL,
+    append_round INT NOT NULL,
+    action_type VARCHAR(32) NOT NULL,
+    append_item_count INT NOT NULL,
+    append_amount_in_cent INT NOT NULL,
+    operate_time TIMESTAMP NOT NULL,
+    operator_name VARCHAR(100),
+    note VARCHAR(255),
+    creator VARCHAR(32) DEFAULT 'system',
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updater VARCHAR(32) DEFAULT 'system',
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    del_flag INT DEFAULT 1,
+    test_flag INT DEFAULT 0
+);
+
+CREATE TABLE da_payment_record (
+    id BIGINT PRIMARY KEY,
+    order_id BIGINT NOT NULL,
+    store_id BIGINT NOT NULL,
+    payment_no VARCHAR(64) NOT NULL,
+    payment_method VARCHAR(32) NOT NULL,
+    payment_channel VARCHAR(32),
+    paid_amount_in_cent INT NOT NULL,
+    change_amount_in_cent INT NOT NULL,
+    payment_status VARCHAR(32) NOT NULL,
+    paid_time TIMESTAMP NOT NULL,
+    cashier_name VARCHAR(100),
+    remark VARCHAR(255),
+    creator VARCHAR(32) DEFAULT 'system',
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updater VARCHAR(32) DEFAULT 'system',
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    del_flag INT DEFAULT 1,
+    test_flag INT DEFAULT 0
+);
+
 CREATE TABLE da_user (
     id BIGINT PRIMARY KEY,
     username VARCHAR(64) NOT NULL,

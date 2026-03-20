@@ -163,6 +163,71 @@ export default {
       discountAmount: 'Discount Amount',
       appendOrder: 'Append Order',
       createdAt: 'Created At',
+      actions: 'Actions',
+    },
+    actions: {
+      viewDetail: 'Detail',
+    },
+    detail: {
+      sections: {
+        basic: 'Basic Information',
+        amount: 'Amount Summary',
+        items: 'Order Items',
+        appendRecords: 'Append Records',
+        paymentRecords: 'Payment Records',
+      },
+      fields: {
+        orderNo: 'Order No',
+        createdAt: 'Created At',
+        storeName: 'Store',
+        tableName: 'Table',
+        memberName: 'Member',
+        orderStatus: 'Order Status',
+        paymentStatus: 'Payment Status',
+        appendOrder: 'Append Order',
+        remark: 'Remark',
+      },
+      amounts: {
+        originalAmount: 'Original Amount',
+        discountAmount: 'Discount Amount',
+        payableAmount: 'Payable Amount',
+        paidAmount: 'Paid Amount',
+      },
+      items: {
+        columns: {
+          productName: 'Product',
+          skuName: 'SKU',
+          quantity: 'Quantity',
+          unitPrice: 'Unit Price',
+          totalPrice: 'Amount',
+          remark: 'Remark',
+        },
+      },
+      append: {
+        columns: {
+          appendNo: 'Append No',
+          operatorName: 'Operator',
+          quantity: 'Quantity',
+          amount: 'Amount',
+          remark: 'Remark',
+          createdAt: 'Created At',
+        },
+      },
+      payment: {
+        columns: {
+          paymentNo: 'Payment No',
+          paymentMethod: 'Method',
+          paymentStatus: 'Status',
+          amount: 'Amount',
+          operatorName: 'Operator',
+          paidAt: 'Paid At',
+        },
+      },
+      actions: {
+        backToList: 'Back to List',
+      },
+      invalidOrderId: 'Invalid order id.',
+      empty: 'No order detail data.',
     },
   },
   device: {
@@ -303,6 +368,10 @@ export default {
     orders: {
       title: 'Order Management',
       description: 'Search and review order progress, payment, and append-order records.',
+    },
+    orderDetail: {
+      title: 'Order Detail',
+      description: 'Review order overview, amount summary, order items, append records, and payments.',
     },
     devices: {
       title: 'Device Management',
