@@ -23,7 +23,12 @@ public class DeviceController {
     }
 
     @GetMapping
-    public ApiResponse<List<DeviceSummary>> listByStore(@RequestParam(defaultValue = "2") Long storeId) {
-        return ApiResponse.success(messageHelper.get("success.fetch"), deviceService.listByStore(storeId));
+    public ApiResponse<List<DeviceSummary>> list(
+            @RequestParam(required = false) Long storeId,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) Boolean enabled,
+            @RequestParam(required = false) String keyword
+    ) {
+        return ApiResponse.success(messageHelper.get("success.fetch"), deviceService.list(storeId, type, enabled, keyword));
     }
 }

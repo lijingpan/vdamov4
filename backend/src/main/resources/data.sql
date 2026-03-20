@@ -2,10 +2,10 @@ INSERT INTO da_store (id, name, country_code, status, business_modes) VALUES
 (2, 'chindatest', 'CN', 'OPEN', 'DINE_IN,TAKEAWAY'),
 (54, 'CHINDAHOTPOT 010', 'TH', 'REST', 'DINE_IN');
 
-INSERT INTO da_store_device (id, store_id, name, type, brand, sn, size, enabled) VALUES
-(1001, 2, 'kitchen-printer-1', 'PRINTER', 'Feie', '922421085', '58mm', TRUE),
-(2001, 2, 'voice-speaker-1', 'SPEAKER', 'YunLaba', 'DMCGB008202408000003', '--', TRUE),
-(3001, 54, 'front-printer-1', 'PRINTER', 'Feie', '922476189', '58mm', FALSE);
+INSERT INTO da_store_device (id, store_id, name, type, purpose, brand, sn, size, online_status, enabled) VALUES
+(1001, 2, 'kitchen-printer-1', 'PRINTER', 'KITCHEN_PRINT', 'Feie', '922421085', '58mm', 'ONLINE', TRUE),
+(2001, 2, 'voice-speaker-1', 'SPEAKER', 'ORDER_BROADCAST', 'YunLaba', 'DMCGB008202408000003', '--', 'ONLINE', TRUE),
+(3001, 54, 'front-printer-1', 'PRINTER', 'CHECKOUT_PRINT', 'Feie', '922476189', '58mm', 'OFFLINE', FALSE);
 
 INSERT INTO da_member (id, store_id, level_code, display_name, country_code, phone_national, phone_e164) VALUES
 (362223, 54, 'VIP1', 'N', '+66', '893699324', '+66893699324'),

@@ -7,6 +7,7 @@ import com.vdamo.ordering.service.ProductService;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -22,7 +23,14 @@ public class ProductController {
     }
 
     @GetMapping
-    public ApiResponse<List<ProductSummary>> list() {
-        return ApiResponse.success(messageHelper.get("success.fetch"), productService.list());
+    public ApiResponse<List<ProductSummary>> list(
+            @RequestParam(required = false) Long storeId,
+            @RequestParam(required = false) Boolean active,
+            @RequestParam(required = false) String categoryCode,
+            @RequestParam(required = false) String keyword
+    ) {
+        return ApiResponse.success(
+                messageHelper.get("success.fetch"),
+                productService.list(storeId, active, categoryCode, keyword));
     }
 }

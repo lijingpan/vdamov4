@@ -26,8 +26,15 @@ public class MemberController {
     }
 
     @GetMapping
-    public ApiResponse<List<MemberSummary>> list() {
-        return ApiResponse.success(messageHelper.get("success.fetch"), memberService.list());
+    public ApiResponse<List<MemberSummary>> list(
+            @RequestParam(required = false) Long storeId,
+            @RequestParam(required = false) String countryCode,
+            @RequestParam(required = false) String levelCode,
+            @RequestParam(required = false) String keyword
+    ) {
+        return ApiResponse.success(
+                messageHelper.get("success.fetch"),
+                memberService.list(storeId, countryCode, levelCode, keyword));
     }
 
     @GetMapping("/by-phone")

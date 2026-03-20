@@ -11,9 +11,11 @@ public class StoreDeviceEntity extends BaseEntity {
     private Long storeId;
     private String name;
     private String type;
+    private String purpose;
     private String brand;
     private String sn;
     private String size;
+    private String onlineStatus;
     private Boolean enabled;
 
     public Long getId() {
@@ -48,6 +50,14 @@ public class StoreDeviceEntity extends BaseEntity {
         this.type = type;
     }
 
+    public String getPurpose() {
+        return purpose;
+    }
+
+    public void setPurpose(String purpose) {
+        this.purpose = purpose;
+    }
+
     public String getBrand() {
         return brand;
     }
@@ -70,6 +80,14 @@ public class StoreDeviceEntity extends BaseEntity {
 
     public void setSize(String size) {
         this.size = size;
+    }
+
+    public String getOnlineStatus() {
+        return onlineStatus;
+    }
+
+    public void setOnlineStatus(String onlineStatus) {
+        this.onlineStatus = onlineStatus;
     }
 
     public Boolean getEnabled() {
