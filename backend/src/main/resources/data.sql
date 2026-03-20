@@ -86,23 +86,24 @@ INSERT INTO da_menu (id, parent_id, name, route, permission_code, sort_order) VA
 (3, NULL, 'Table', '/tables', 'table:view', 3),
 (4, NULL, 'Table Area', '/table-areas', 'table.area:view', 4),
 (5, NULL, 'Order', '/orders', 'order:view', 5),
-(6, NULL, 'Device', '/devices', 'device:view', 6),
-(7, NULL, 'Product', '/products', 'product:view', 7),
-(8, NULL, 'Product Category', '/product-categories', 'product.category:view', 8),
-(9, NULL, 'Member', '/members', 'member:view', 9),
-(10, NULL, 'Role', '/roles', 'role:view', 10),
-(11, NULL, 'User', '/users', 'user:view', 11),
-(12, NULL, 'Menu', '/menus', 'menu:view', 12);
+(6, NULL, 'Sales Report', '/sales-reports', 'sales.report:view', 6),
+(7, NULL, 'Device', '/devices', 'device:view', 7),
+(8, NULL, 'Product', '/products', 'product:view', 8),
+(9, NULL, 'Product Category', '/product-categories', 'product.category:view', 9),
+(10, NULL, 'Member', '/members', 'member:view', 10),
+(11, NULL, 'Role', '/roles', 'role:view', 11),
+(12, NULL, 'User', '/users', 'user:view', 12),
+(13, NULL, 'Menu', '/menus', 'menu:view', 13);
 
 INSERT INTO da_user_role (id, user_id, role_id) VALUES
 (1, 1, 1),
 (2, 2, 2);
 
 INSERT INTO da_role_menu (id, role_id, menu_id) VALUES
-(1, 1, 1), (2, 1, 2), (3, 1, 3), (4, 1, 4), (5, 1, 5), (6, 1, 6),
-(7, 1, 7), (8, 1, 8), (9, 1, 9), (10, 1, 10), (11, 1, 11), (12, 1, 12),
-(13, 2, 1), (14, 2, 2), (15, 2, 3), (16, 2, 4), (17, 2, 5), (18, 2, 6),
-(19, 2, 7), (20, 2, 8), (21, 2, 9);
+(1, 1, 1), (2, 1, 2), (3, 1, 3), (4, 1, 4), (5, 1, 5), (6, 1, 6), (7, 1, 7),
+(8, 1, 8), (9, 1, 9), (10, 1, 10), (11, 1, 11), (12, 1, 12), (13, 1, 13),
+(14, 2, 1), (15, 2, 2), (16, 2, 3), (17, 2, 4), (18, 2, 5), (19, 2, 6),
+(20, 2, 7), (21, 2, 8), (22, 2, 9), (23, 2, 10);
 
 INSERT INTO da_user_store (id, user_id, store_id) VALUES
 (1, 1, 2), (2, 1, 54), (3, 2, 54);

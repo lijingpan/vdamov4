@@ -2,6 +2,7 @@ import { createI18n } from 'vue-i18n';
 import enUS from './messages/en-US';
 import { masterDataMessages } from './messages/master-data';
 import { orderDetailMessages } from './messages/order-detail';
+import { salesReportMessages } from './messages/sales-report';
 import thTH from './messages/th-TH';
 import zhCN from './messages/zh-CN';
 
@@ -36,16 +37,25 @@ function mergeLocaleMessages(base: LocaleMessageObject, patch: LocaleMessageObje
 
 const messages = {
   'zh-CN': mergeLocaleMessages(
-    mergeLocaleMessages(zhCN as LocaleMessageObject, orderDetailMessages['zh-CN'] as LocaleMessageObject),
-    masterDataMessages['zh-CN'] as LocaleMessageObject,
+    mergeLocaleMessages(
+      mergeLocaleMessages(zhCN as LocaleMessageObject, orderDetailMessages['zh-CN'] as LocaleMessageObject),
+      masterDataMessages['zh-CN'] as LocaleMessageObject,
+    ),
+    salesReportMessages['zh-CN'] as LocaleMessageObject,
   ),
   'en-US': mergeLocaleMessages(
-    mergeLocaleMessages(enUS as LocaleMessageObject, orderDetailMessages['en-US'] as LocaleMessageObject),
-    masterDataMessages['en-US'] as LocaleMessageObject,
+    mergeLocaleMessages(
+      mergeLocaleMessages(enUS as LocaleMessageObject, orderDetailMessages['en-US'] as LocaleMessageObject),
+      masterDataMessages['en-US'] as LocaleMessageObject,
+    ),
+    salesReportMessages['en-US'] as LocaleMessageObject,
   ),
   'th-TH': mergeLocaleMessages(
-    mergeLocaleMessages(thTH as LocaleMessageObject, orderDetailMessages['th-TH'] as LocaleMessageObject),
-    masterDataMessages['th-TH'] as LocaleMessageObject,
+    mergeLocaleMessages(
+      mergeLocaleMessages(thTH as LocaleMessageObject, orderDetailMessages['th-TH'] as LocaleMessageObject),
+      masterDataMessages['th-TH'] as LocaleMessageObject,
+    ),
+    salesReportMessages['th-TH'] as LocaleMessageObject,
   ),
 } as Record<string, any>;
 

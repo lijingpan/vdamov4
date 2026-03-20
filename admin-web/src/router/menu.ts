@@ -8,6 +8,7 @@ import {
   OfficeBuilding,
   Operation,
   Platform,
+  PieChart,
   Setting,
   Tickets,
   UserFilled,
@@ -51,6 +52,12 @@ export const menuItems: MenuItem[] = [
     path: '/orders',
     icon: Document,
     i18nKey: 'menu.orders',
+  },
+  {
+    key: 'salesReports',
+    path: '/sales-reports',
+    icon: PieChart,
+    i18nKey: 'menu.salesReports',
   },
   {
     key: 'devices',

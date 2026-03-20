@@ -10,6 +10,7 @@ import OrderView from '@/views/OrderView.vue';
 import ProductCategoryView from '@/views/ProductCategoryView.vue';
 import ProductView from '@/views/ProductView.vue';
 import RoleView from '@/views/RoleView.vue';
+import SalesReportView from '@/views/SalesReportView.vue';
 import StoreView from '@/views/StoreView.vue';
 import TableAreaView from '@/views/TableAreaView.vue';
 import TableView from '@/views/TableView.vue';
@@ -56,6 +57,11 @@ const routes: RouteRecordRaw[] = [
         path: 'orders',
         name: 'orders',
         component: OrderView,
+      },
+      {
+        path: 'sales-reports',
+        name: 'sales-reports',
+        component: SalesReportView,
       },
       {
         path: 'orders/:id',
