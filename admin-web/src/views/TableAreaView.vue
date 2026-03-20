@@ -1,47 +1,72 @@
 <template>
   <PageShell :title="t('page.tableAreas.title')" :description="t('page.tableAreas.description')">
-    <div v-loading="loading">
-      <el-form :inline="true" class="filter-form">
+    <template #actions>
+      <el-button :icon="RefreshRight" @click="loadRows">{{ t('common.refresh') }}</el-button>
+      <el-button type="primary" :icon="Plus" @click="openCreateDialog">
+        {{ t('tableArea.toolbar.add') }}
+      </el-button>
+    </template>
+
+    <template #meta>
+      <div class="stats-grid stats-grid--three">
+        <div class="stat-card">
+          <div class="stat-card__label">{{ t('tableArea.summary.total') }}</div>
+          <div class="stat-card__value">{{ rows.length }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__label">{{ t('tableArea.summary.enabled') }}</div>
+          <div class="stat-card__value">{{ enabledCount }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__label">{{ t('tableArea.summary.tableCount') }}</div>
+          <div class="stat-card__value">{{ totalTableCount }}</div>
+        </div>
+      </div>
+    </template>
+
+    <el-card shadow="never" class="page-card filter-card">
+      <el-form :inline="true">
         <el-form-item :label="t('tableArea.filter.store')">
-          <el-select v-model="storeId" clearable :placeholder="t('tableArea.filter.storePlaceholder')">
-            <el-option
-              v-for="item in storeOptions"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            />
+          <el-select v-model="filters.storeId" clearable :placeholder="t('tableArea.filter.storePlaceholder')">
+            <el-option v-for="item in storeOptions" :key="item.id" :label="item.name" :value="item.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item :label="t('tableArea.filter.enabled')">
+          <el-select v-model="filters.enabled" clearable :placeholder="t('tableArea.filter.enabledPlaceholder')">
+            <el-option :label="t('dict.enableStatus.ENABLED')" :value="true" />
+            <el-option :label="t('dict.enableStatus.DISABLED')" :value="false" />
           </el-select>
         </el-form-item>
         <el-form-item :label="t('tableArea.filter.keyword')">
-          <el-input v-model="keyword" clearable :placeholder="t('tableArea.filter.keywordPlaceholder')" />
+          <el-input
+            v-model="filters.keyword"
+            clearable
+            :placeholder="t('tableArea.filter.keywordPlaceholder')"
+            @keyup.enter="loadRows"
+          />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="loadTableAreas">{{ t('common.search') }}</el-button>
+          <el-button type="primary" @click="loadRows">{{ t('common.search') }}</el-button>
           <el-button @click="resetFilters">{{ t('common.reset') }}</el-button>
         </el-form-item>
       </el-form>
+    </el-card>
 
-      <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" />
+    <el-card shadow="never" class="page-card data-card">
+      <div class="action-bar">
+        <div class="action-bar__hint">{{ t('page.tableAreas.description') }}</div>
+      </div>
 
-      <el-row :gutter="12" class="summary-row">
-        <el-col :xs="12" :md="8">
-          <el-card shadow="hover">
-            <el-statistic :title="t('tableArea.summary.total')" :value="filteredRows.length" />
-          </el-card>
-        </el-col>
-        <el-col :xs="12" :md="8">
-          <el-card shadow="hover">
-            <el-statistic :title="t('tableArea.summary.enabled')" :value="enabledCount" />
-          </el-card>
-        </el-col>
-        <el-col :xs="12" :md="8">
-          <el-card shadow="hover">
-            <el-statistic :title="t('tableArea.summary.tableCount')" :value="totalTableCount" />
-          </el-card>
-        </el-col>
-      </el-row>
+      <el-alert
+        v-if="errorMessage"
+        :title="errorMessage"
+        type="error"
+        show-icon
+        :closable="false"
+        style="margin: 16px 0"
+      />
 
-      <el-table :data="filteredRows" stripe border>
+      <el-table v-loading="loading" :data="rows" stripe>
         <el-table-column prop="storeName" :label="t('tableArea.columns.storeName')" min-width="180" />
         <el-table-column prop="areaName" :label="t('tableArea.columns.areaName')" min-width="180" />
         <el-table-column prop="areaCode" :label="t('tableArea.columns.areaCode')" min-width="160" />
@@ -54,59 +79,160 @@
           </template>
         </el-table-column>
         <el-table-column prop="tableCount" :label="t('tableArea.columns.tableCount')" min-width="120" />
+        <el-table-column :label="t('common.actions')" min-width="180" fixed="right">
+          <template #default="{ row }">
+            <div class="table-actions">
+              <el-button link type="primary" @click="openEditDialog(row)">{{ t('common.edit') }}</el-button>
+              <el-button
+                v-if="!row.enabled"
+                link
+                type="success"
+                @click="toggleEnabled(row, true)"
+              >
+                {{ t('tableArea.actions.enable') }}
+              </el-button>
+              <el-button
+                v-else
+                link
+                type="danger"
+                @click="toggleEnabled(row, false)"
+              >
+                {{ t('tableArea.actions.disable') }}
+              </el-button>
+            </div>
+          </template>
+        </el-table-column>
       </el-table>
-    </div>
+    </el-card>
+
+    <el-dialog
+      v-model="dialogVisible"
+      :title="dialogMode === 'create' ? t('tableArea.toolbar.add') : t('common.edit')"
+      width="540px"
+      destroy-on-close
+    >
+      <el-form ref="formRef" :model="form" :rules="rules" label-position="top" class="dialog-form">
+        <el-form-item :label="t('tableArea.form.store')" prop="storeId">
+          <el-select v-model="form.storeId" :placeholder="t('tableArea.form.storePlaceholder')">
+            <el-option v-for="item in storeOptions" :key="item.id" :label="item.name" :value="item.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item :label="t('tableArea.form.areaName')" prop="areaName">
+          <el-input v-model="form.areaName" :placeholder="t('tableArea.form.areaNamePlaceholder')" />
+        </el-form-item>
+        <el-form-item :label="t('tableArea.form.areaCode')" prop="areaCode">
+          <el-input v-model="form.areaCode" :placeholder="t('tableArea.form.areaCodePlaceholder')" />
+        </el-form-item>
+        <el-form-item :label="t('tableArea.form.sortOrder')" prop="sortOrder">
+          <el-input-number v-model="form.sortOrder" :min="0" controls-position="right" />
+        </el-form-item>
+        <el-form-item :label="t('tableArea.form.enabled')" prop="enabled">
+          <el-switch v-model="form.enabled" />
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitForm">{{ t('common.save') }}</el-button>
+      </template>
+    </el-dialog>
   </PageShell>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
+import { Plus, RefreshRight } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
-import type { StoreSummary } from '@/api/stores';
-import { fetchStores } from '@/api/stores';
-import type { TableAreaSummary } from '@/api/table-areas';
-import { fetchTableAreas } from '@/api/table-areas';
+import { fetchStores, type StoreSummary } from '@/api/stores';
+import {
+  createTableArea,
+  fetchTableAreas,
+  updateTableArea,
+  updateTableAreaEnabled,
+  type TableAreaPayload,
+  type TableAreaSummary,
+} from '@/api/table-areas';
 import PageShell from '@/components/PageShell.vue';
+
+interface Filters {
+  storeId?: number;
+  keyword: string;
+  enabled?: boolean;
+}
+
+interface AreaFormModel {
+  id?: number;
+  storeId?: number;
+  areaName: string;
+  areaCode: string;
+  sortOrder: number;
+  enabled: boolean;
+}
 
 const { t } = useI18n();
 
 const loading = ref(false);
+const submitting = ref(false);
 const errorMessage = ref('');
-const storeId = ref<number | undefined>();
-const keyword = ref('');
-const storeOptions = ref<StoreSummary[]>([]);
 const rows = ref<TableAreaSummary[]>([]);
+const storeOptions = ref<StoreSummary[]>([]);
+const dialogVisible = ref(false);
+const dialogMode = ref<'create' | 'edit'>('create');
+const formRef = ref<FormInstance>();
 
-const storeNameMap = computed(() =>
-  storeOptions.value.reduce<Record<number, string>>((result, item) => {
-    result[item.id] = item.name;
-    return result;
-  }, {}),
-);
+const filters = reactive<Filters>({
+  keyword: '',
+});
+const form = reactive<AreaFormModel>({
+  areaName: '',
+  areaCode: '',
+  sortOrder: 10,
+  enabled: true,
+});
 
-const filteredRows = computed(() =>
-  rows.value
-    .map((item) => ({
-      ...item,
-      storeName: item.storeName || storeNameMap.value[item.storeId] || '',
-    }))
-    .filter((item) => {
-      const keywordValue = keyword.value.trim().toLowerCase();
-      return (
-        !keywordValue ||
-        item.areaName.toLowerCase().includes(keywordValue) ||
-        item.areaCode.toLowerCase().includes(keywordValue) ||
-        item.storeName.toLowerCase().includes(keywordValue)
-      );
-    }),
-);
+const enabledCount = computed(() => rows.value.filter((item) => item.enabled).length);
+const totalTableCount = computed(() => rows.value.reduce((sum, item) => sum + item.tableCount, 0));
 
-const enabledCount = computed(() => filteredRows.value.filter((item) => item.enabled).length);
-const totalTableCount = computed(() => filteredRows.value.reduce((sum, item) => sum + item.tableCount, 0));
+const rules: FormRules<AreaFormModel> = {
+  storeId: [{ required: true, message: t('tableArea.form.storePlaceholder'), trigger: 'change' }],
+  areaName: [{ required: true, message: t('tableArea.form.areaNamePlaceholder'), trigger: 'blur' }],
+  areaCode: [{ required: true, message: t('tableArea.form.areaCodePlaceholder'), trigger: 'blur' }],
+  sortOrder: [{ required: true, message: t('tableArea.form.sortOrder'), trigger: 'change' }],
+};
 
 function resetFilters() {
-  storeId.value = undefined;
-  keyword.value = '';
+  filters.storeId = undefined;
+  filters.keyword = '';
+  filters.enabled = undefined;
+  loadRows();
+}
+
+function resetForm() {
+  form.id = undefined;
+  form.storeId = storeOptions.value.length === 1 ? storeOptions.value[0].id : undefined;
+  form.areaName = '';
+  form.areaCode = '';
+  form.sortOrder = 10;
+  form.enabled = true;
+  formRef.value?.clearValidate();
+}
+
+function openCreateDialog() {
+  dialogMode.value = 'create';
+  resetForm();
+  dialogVisible.value = true;
+}
+
+function openEditDialog(row: TableAreaSummary) {
+  dialogMode.value = 'edit';
+  form.id = row.id;
+  form.storeId = row.storeId;
+  form.areaName = row.areaName;
+  form.areaCode = row.areaCode;
+  form.sortOrder = row.sortOrder;
+  form.enabled = row.enabled;
+  dialogVisible.value = true;
 }
 
 async function loadStores() {
@@ -117,13 +243,14 @@ async function loadStores() {
   }
 }
 
-async function loadTableAreas() {
+async function loadRows() {
   loading.value = true;
   errorMessage.value = '';
   try {
     rows.value = await fetchTableAreas({
-      storeId: storeId.value,
-      keyword: keyword.value || undefined,
+      storeId: filters.storeId,
+      keyword: filters.keyword || undefined,
+      enabled: filters.enabled,
     });
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : t('common.requestFailed');
@@ -132,18 +259,57 @@ async function loadTableAreas() {
   }
 }
 
+async function submitForm() {
+  const valid = await formRef.value?.validate().catch(() => false);
+  if (!valid || !form.storeId) {
+    return;
+  }
+
+  submitting.value = true;
+  try {
+    const payload: TableAreaPayload = {
+      storeId: form.storeId,
+      areaName: form.areaName.trim(),
+      areaCode: form.areaCode.trim().toUpperCase(),
+      sortOrder: form.sortOrder,
+      enabled: form.enabled,
+    };
+    if (dialogMode.value === 'create') {
+      await createTableArea(payload);
+    } else if (form.id) {
+      await updateTableArea(form.id, payload);
+    }
+    dialogVisible.value = false;
+    ElMessage.success(t('common.save'));
+    await loadRows();
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : t('common.requestFailed'));
+  } finally {
+    submitting.value = false;
+  }
+}
+
+async function toggleEnabled(row: TableAreaSummary, enabled: boolean) {
+  try {
+    await ElMessageBox.confirm(
+      `${row.areaName} · ${enabled ? t('common.enable') : t('common.disable')}`,
+      t('common.actions'),
+      { type: 'warning' },
+    );
+    await updateTableAreaEnabled(row.id, enabled);
+    ElMessage.success(t('common.save'));
+    await loadRows();
+  } catch (error) {
+    if (error === 'cancel' || error === 'close') {
+      return;
+    }
+    ElMessage.error(error instanceof Error ? error.message : t('common.requestFailed'));
+  }
+}
+
 onMounted(async () => {
   await loadStores();
-  await loadTableAreas();
+  resetForm();
+  await loadRows();
 });
 </script>
-
-<style scoped>
-.filter-form {
-  margin-bottom: 12px;
-}
-
-.summary-row {
-  margin-bottom: 12px;
-}
-</style>

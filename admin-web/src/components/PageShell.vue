@@ -1,12 +1,20 @@
 <template>
   <section class="page-shell">
-    <header class="page-shell__header">
-      <h2>{{ title }}</h2>
-      <p>{{ description }}</p>
+    <header class="page-shell__hero">
+      <div class="page-shell__intro">
+        <p class="page-shell__eyebrow">{{ description }}</p>
+        <h2>{{ title }}</h2>
+      </div>
+      <div v-if="$slots.actions" class="page-shell__actions">
+        <slot name="actions" />
+      </div>
     </header>
-    <el-card shadow="never" class="page-shell__card">
+    <div v-if="$slots.meta" class="page-shell__meta">
+      <slot name="meta" />
+    </div>
+    <div class="page-shell__content">
       <slot />
-    </el-card>
+    </div>
   </section>
 </template>
 

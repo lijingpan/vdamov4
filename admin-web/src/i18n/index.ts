@@ -1,5 +1,6 @@
 import { createI18n } from 'vue-i18n';
 import enUS from './messages/en-US';
+import { managementMessages } from './messages/management';
 import { masterDataMessages } from './messages/master-data';
 import { orderDetailMessages } from './messages/order-detail';
 import { salesReportMessages } from './messages/sales-report';
@@ -38,22 +39,31 @@ function mergeLocaleMessages(base: LocaleMessageObject, patch: LocaleMessageObje
 const messages = {
   'zh-CN': mergeLocaleMessages(
     mergeLocaleMessages(
-      mergeLocaleMessages(zhCN as LocaleMessageObject, orderDetailMessages['zh-CN'] as LocaleMessageObject),
-      masterDataMessages['zh-CN'] as LocaleMessageObject,
+      mergeLocaleMessages(
+        mergeLocaleMessages(zhCN as LocaleMessageObject, orderDetailMessages['zh-CN'] as LocaleMessageObject),
+        masterDataMessages['zh-CN'] as LocaleMessageObject,
+      ),
+      managementMessages['zh-CN'] as LocaleMessageObject,
     ),
     salesReportMessages['zh-CN'] as LocaleMessageObject,
   ),
   'en-US': mergeLocaleMessages(
     mergeLocaleMessages(
-      mergeLocaleMessages(enUS as LocaleMessageObject, orderDetailMessages['en-US'] as LocaleMessageObject),
-      masterDataMessages['en-US'] as LocaleMessageObject,
+      mergeLocaleMessages(
+        mergeLocaleMessages(enUS as LocaleMessageObject, orderDetailMessages['en-US'] as LocaleMessageObject),
+        masterDataMessages['en-US'] as LocaleMessageObject,
+      ),
+      managementMessages['en-US'] as LocaleMessageObject,
     ),
     salesReportMessages['en-US'] as LocaleMessageObject,
   ),
   'th-TH': mergeLocaleMessages(
     mergeLocaleMessages(
-      mergeLocaleMessages(thTH as LocaleMessageObject, orderDetailMessages['th-TH'] as LocaleMessageObject),
-      masterDataMessages['th-TH'] as LocaleMessageObject,
+      mergeLocaleMessages(
+        mergeLocaleMessages(thTH as LocaleMessageObject, orderDetailMessages['th-TH'] as LocaleMessageObject),
+        masterDataMessages['th-TH'] as LocaleMessageObject,
+      ),
+      managementMessages['th-TH'] as LocaleMessageObject,
     ),
     salesReportMessages['th-TH'] as LocaleMessageObject,
   ),

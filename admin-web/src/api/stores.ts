@@ -1,7 +1,19 @@
 import { request } from '@/api/http';
 
+export interface StoreQuery {
+  keyword?: string;
+  status?: string;
+}
+
 export interface StoreSummary {
   id: number;
+  name: string;
+  countryCode: string;
+  businessStatus: string;
+  businessTypes: string[];
+}
+
+export interface StorePayload {
   name: string;
   countryCode: string;
   businessStatus: string;
@@ -30,16 +42,46 @@ function asStringList(value: unknown): string[] {
   return value.filter((item): item is string => typeof item === 'string');
 }
 
-export async function fetchStores(): Promise<StoreSummary[]> {
-  const raw = await request<unknown[]>('/api/v1/stores');
-  return raw.map((item) => {
-    const source = asRecord(item);
-    return {
-      id: asNumber(source.id),
-      name: asString(source.name),
-      countryCode: asString(source.countryCode),
-      businessStatus: asString(source.businessStatus || source.status),
-      businessTypes: asStringList(source.businessTypes || source.businessModes),
-    };
+function toStoreSummary(item: unknown): StoreSummary {
+  const source = asRecord(item);
+  return {
+    id: asNumber(source.id),
+    name: asString(source.name),
+    countryCode: asString(source.countryCode),
+    businessStatus: asString(source.businessStatus || source.status),
+    businessTypes: asStringList(source.businessTypes || source.businessModes),
+  };
+}
+
+export async function fetchStores(query?: StoreQuery): Promise<StoreSummary[]> {
+  const raw = await request<unknown[]>(
+    '/api/v1/stores',
+    undefined,
+    query as Record<string, string | number | boolean | null | undefined> | undefined,
+  );
+  return raw.map(toStoreSummary);
+}
+
+export async function createStore(payload: StorePayload): Promise<StoreSummary> {
+  const raw = await request<unknown>('/api/v1/stores', {
+    method: 'POST',
+    body: JSON.stringify(payload),
   });
+  return toStoreSummary(raw);
+}
+
+export async function updateStore(id: number, payload: StorePayload): Promise<StoreSummary> {
+  const raw = await request<unknown>(`/api/v1/stores/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+  return toStoreSummary(raw);
+}
+
+export async function updateStoreStatus(id: number, businessStatus: string): Promise<StoreSummary> {
+  const raw = await request<unknown>(`/api/v1/stores/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ businessStatus }),
+  });
+  return toStoreSummary(raw);
 }

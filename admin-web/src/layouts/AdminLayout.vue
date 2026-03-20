@@ -1,45 +1,45 @@
 <template>
   <el-container class="layout-root">
-    <el-aside width="240px" class="layout-sidebar">
-      <div class="brand">
-        <h1>{{ t('app.title') }}</h1>
-        <p>{{ t('app.subtitle') }}</p>
-      </div>
-      <el-menu
-        :default-active="activeMenu"
-        class="side-menu"
-        router
-        background-color="transparent"
-        text-color="#cdd6e5"
-        active-text-color="#67a0ff"
-      >
-        <el-menu-item
-          v-for="item in visibleMenuItems"
-          :key="item.key"
-          :index="item.path"
-          class="side-menu__item"
-        >
-          <el-icon><component :is="item.icon" /></el-icon>
-          <span>{{ t(item.i18nKey) }}</span>
-        </el-menu-item>
-      </el-menu>
-    </el-aside>
-    <el-container>
-      <el-header class="layout-header">
-        <div class="header-title">{{ t(`menu.${activeLabel}`) }}</div>
-        <div class="header-action">
-          <span class="header-user">{{ currentUserName }}</span>
-          <span>{{ t('header.language') }}</span>
-          <el-select v-model="selectedLocale" class="lang-select" @change="changeLocale">
-            <el-option :label="t('locale.zhCN')" value="zh-CN" />
-            <el-option :label="t('locale.enUS')" value="en-US" />
-            <el-option :label="t('locale.thTH')" value="th-TH" />
-          </el-select>
-          <el-button link type="primary" @click="handleLogout">{{ t('header.logout') }}</el-button>
+    <el-header class="layout-header">
+      <div class="layout-header__brand">
+        <div class="layout-header__badge">VD</div>
+        <div>
+          <h1>{{ t('app.title') }}</h1>
+          <p>{{ t('app.subtitle') }}</p>
         </div>
-      </el-header>
+      </div>
+      <div class="layout-header__center">
+        <span class="layout-header__section">{{ t(`menu.${activeLabel}`) }}</span>
+      </div>
+      <div class="header-action">
+        <span class="header-user">{{ currentUserName }}</span>
+        <span class="header-divider" />
+        <span>{{ t('header.language') }}</span>
+        <el-select v-model="selectedLocale" class="lang-select" @change="changeLocale">
+          <el-option :label="t('locale.zhCN')" value="zh-CN" />
+          <el-option :label="t('locale.enUS')" value="en-US" />
+          <el-option :label="t('locale.thTH')" value="th-TH" />
+        </el-select>
+        <el-button link class="layout-logout" @click="handleLogout">{{ t('header.logout') }}</el-button>
+      </div>
+    </el-header>
+    <el-container class="layout-body">
+      <el-aside width="248px" class="layout-sidebar">
+        <div class="sidebar-panel">
+          <div class="sidebar-panel__title">{{ t(`menu.${activeLabel}`) }}</div>
+          <div class="sidebar-panel__subtitle">{{ t('app.subtitle') }}</div>
+        </div>
+        <el-menu :default-active="activeMenu" class="side-menu" router>
+          <el-menu-item v-for="item in visibleMenuItems" :key="item.key" :index="item.path" class="side-menu__item">
+            <el-icon><component :is="item.icon" /></el-icon>
+            <span>{{ t(item.i18nKey) }}</span>
+          </el-menu-item>
+        </el-menu>
+      </el-aside>
       <el-main class="layout-main">
-        <router-view />
+        <div class="layout-main__inner">
+          <router-view />
+        </div>
       </el-main>
     </el-container>
   </el-container>
