@@ -7,9 +7,11 @@ import MenuView from '@/views/MenuView.vue';
 import MemberView from '@/views/MemberView.vue';
 import OrderDetailView from '@/views/OrderDetailView.vue';
 import OrderView from '@/views/OrderView.vue';
+import ProductCategoryView from '@/views/ProductCategoryView.vue';
 import ProductView from '@/views/ProductView.vue';
 import RoleView from '@/views/RoleView.vue';
 import StoreView from '@/views/StoreView.vue';
+import TableAreaView from '@/views/TableAreaView.vue';
 import TableView from '@/views/TableView.vue';
 import UserView from '@/views/UserView.vue';
 import { ApiError } from '@/api/http';
@@ -46,6 +48,11 @@ const routes: RouteRecordRaw[] = [
         component: TableView,
       },
       {
+        path: 'table-areas',
+        name: 'table-areas',
+        component: TableAreaView,
+      },
+      {
         path: 'orders',
         name: 'orders',
         component: OrderView,
@@ -67,6 +74,11 @@ const routes: RouteRecordRaw[] = [
         path: 'products',
         name: 'products',
         component: ProductView,
+      },
+      {
+        path: 'product-categories',
+        name: 'product-categories',
+        component: ProductCategoryView,
       },
       {
         path: 'members',

@@ -15,6 +15,12 @@ INSERT INTO da_product (id, store_id, name, code, category_code, price_in_cent, 
 (1169, 2, 'Signature Milk Tea', 'signature-milk-tea', 'DRINK', 1990, TRUE),
 (1165, 54, 'Buffet 388', 'buffet-388', 'SET_MEAL', 35000, TRUE);
 
+INSERT INTO da_product_category (id, store_id, category_name, category_code, sort_order, enabled) VALUES
+(1301, 2, 'Drinks', 'DRINK', 10, TRUE),
+(1302, 2, 'Snacks', 'SNACK', 20, TRUE),
+(1303, 54, 'Set Meal', 'SET_MEAL', 10, TRUE),
+(1304, 54, 'Seafood', 'SEAFOOD', 20, FALSE);
+
 INSERT INTO da_table (id, store_id, area_name, table_name, capacity, status) VALUES
 (2101, 2, 'Hall A', 'A01', 4, 'IDLE'),
 (2102, 2, 'Hall A', 'A02', 6, 'IN_USE'),
@@ -22,6 +28,12 @@ INSERT INTO da_table (id, store_id, area_name, table_name, capacity, status) VAL
 (5401, 54, 'Main Hall', 'T01', 4, 'IN_USE'),
 (5402, 54, 'Main Hall', 'T02', 4, 'IDLE'),
 (5403, 54, 'VIP', 'V01', 10, 'DISABLED');
+
+INSERT INTO da_table_area (id, store_id, area_name, area_code, sort_order, enabled) VALUES
+(3101, 2, 'Hall A', 'HALL_A', 10, TRUE),
+(3102, 2, 'Hall B', 'HALL_B', 20, TRUE),
+(3103, 54, 'Main Hall', 'MAIN_HALL', 10, TRUE),
+(3104, 54, 'VIP', 'VIP', 20, FALSE);
 
 INSERT INTO da_order (
     id, order_no, store_id, table_id, member_id,
@@ -72,21 +84,25 @@ INSERT INTO da_menu (id, parent_id, name, route, permission_code, sort_order) VA
 (1, NULL, 'Dashboard', '/dashboard', 'dashboard:view', 1),
 (2, NULL, 'Store', '/stores', 'store:view', 2),
 (3, NULL, 'Table', '/tables', 'table:view', 3),
-(4, NULL, 'Order', '/orders', 'order:view', 4),
-(5, NULL, 'Device', '/devices', 'device:view', 5),
-(6, NULL, 'Product', '/products', 'product:view', 6),
-(7, NULL, 'Member', '/members', 'member:view', 7),
-(8, NULL, 'Role', '/roles', 'role:view', 8),
-(9, NULL, 'User', '/users', 'user:view', 9),
-(10, NULL, 'Menu', '/menus', 'menu:view', 10);
+(4, NULL, 'Table Area', '/table-areas', 'table.area:view', 4),
+(5, NULL, 'Order', '/orders', 'order:view', 5),
+(6, NULL, 'Device', '/devices', 'device:view', 6),
+(7, NULL, 'Product', '/products', 'product:view', 7),
+(8, NULL, 'Product Category', '/product-categories', 'product.category:view', 8),
+(9, NULL, 'Member', '/members', 'member:view', 9),
+(10, NULL, 'Role', '/roles', 'role:view', 10),
+(11, NULL, 'User', '/users', 'user:view', 11),
+(12, NULL, 'Menu', '/menus', 'menu:view', 12);
 
 INSERT INTO da_user_role (id, user_id, role_id) VALUES
 (1, 1, 1),
 (2, 2, 2);
 
 INSERT INTO da_role_menu (id, role_id, menu_id) VALUES
-(1, 1, 1), (2, 1, 2), (3, 1, 3), (4, 1, 4), (5, 1, 5), (6, 1, 6), (7, 1, 7), (8, 1, 8), (9, 1, 9), (10, 1, 10),
-(11, 2, 1), (12, 2, 2), (13, 2, 3), (14, 2, 4), (15, 2, 5), (16, 2, 6), (17, 2, 7);
+(1, 1, 1), (2, 1, 2), (3, 1, 3), (4, 1, 4), (5, 1, 5), (6, 1, 6),
+(7, 1, 7), (8, 1, 8), (9, 1, 9), (10, 1, 10), (11, 1, 11), (12, 1, 12),
+(13, 2, 1), (14, 2, 2), (15, 2, 3), (16, 2, 4), (17, 2, 5), (18, 2, 6),
+(19, 2, 7), (20, 2, 8), (21, 2, 9);
 
 INSERT INTO da_user_store (id, user_id, store_id) VALUES
 (1, 1, 2), (2, 1, 54), (3, 2, 54);

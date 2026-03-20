@@ -63,6 +63,21 @@ CREATE TABLE da_product (
     test_flag INT DEFAULT 0
 );
 
+CREATE TABLE da_product_category (
+    id BIGINT PRIMARY KEY,
+    store_id BIGINT NOT NULL,
+    category_name VARCHAR(100) NOT NULL,
+    category_code VARCHAR(32) NOT NULL,
+    sort_order INT NOT NULL,
+    enabled BOOLEAN NOT NULL,
+    creator VARCHAR(32) DEFAULT 'system',
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updater VARCHAR(32) DEFAULT 'system',
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    del_flag INT DEFAULT 1,
+    test_flag INT DEFAULT 0
+);
+
 CREATE TABLE da_table (
     id BIGINT PRIMARY KEY,
     store_id BIGINT NOT NULL,
@@ -70,6 +85,21 @@ CREATE TABLE da_table (
     table_name VARCHAR(64) NOT NULL,
     capacity INT NOT NULL,
     status VARCHAR(32) NOT NULL,
+    creator VARCHAR(32) DEFAULT 'system',
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updater VARCHAR(32) DEFAULT 'system',
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    del_flag INT DEFAULT 1,
+    test_flag INT DEFAULT 0
+);
+
+CREATE TABLE da_table_area (
+    id BIGINT PRIMARY KEY,
+    store_id BIGINT NOT NULL,
+    area_name VARCHAR(64) NOT NULL,
+    area_code VARCHAR(32) NOT NULL,
+    sort_order INT NOT NULL,
+    enabled BOOLEAN NOT NULL,
     creator VARCHAR(32) DEFAULT 'system',
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updater VARCHAR(32) DEFAULT 'system',

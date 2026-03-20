@@ -3,11 +3,13 @@ import {
   CollectionTag,
   DataLine,
   Document,
+  Files,
   HomeFilled,
   OfficeBuilding,
   Operation,
   Platform,
   Setting,
+  Tickets,
   UserFilled,
   User,
 } from '@element-plus/icons-vue';
@@ -39,6 +41,12 @@ export const menuItems: MenuItem[] = [
     i18nKey: 'menu.tables',
   },
   {
+    key: 'tableAreas',
+    path: '/table-areas',
+    icon: Tickets,
+    i18nKey: 'menu.tableAreas',
+  },
+  {
     key: 'orders',
     path: '/orders',
     icon: Document,
@@ -55,6 +63,12 @@ export const menuItems: MenuItem[] = [
     path: '/products',
     icon: Operation,
     i18nKey: 'menu.products',
+  },
+  {
+    key: 'productCategories',
+    path: '/product-categories',
+    icon: Files,
+    i18nKey: 'menu.productCategories',
   },
   {
     key: 'members',
