@@ -8,8 +8,9 @@ import com.vdamo.ordering.model.AuthenticatedUser;
 import com.vdamo.ordering.service.AuthService;
 import com.vdamo.ordering.service.PermissionService;
 import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,6 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
+
+    private static final String BEARER_PREFIX = "Bearer ";
 
     private final MessageHelper messageHelper;
     private final AuthService authService;
@@ -41,5 +44,13 @@ public class AuthController {
     public ApiResponse<AuthenticatedUser> me() {
         return ApiResponse.success(messageHelper.get("success.fetch"), permissionService.currentUser());
     }
-}
 
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout(@RequestHeader("Authorization") String authorization) {
+        String token = authorization.startsWith(BEARER_PREFIX)
+                ? authorization.substring(BEARER_PREFIX.length()).trim()
+                : authorization;
+        authService.logout(token);
+        return ApiResponse.success(messageHelper.get("success.fetch"), null);
+    }
+}

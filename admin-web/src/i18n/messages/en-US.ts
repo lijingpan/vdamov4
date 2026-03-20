@@ -10,6 +10,19 @@ export default {
   },
   header: {
     language: 'Language',
+    logout: 'Logout',
+  },
+  login: {
+    eyebrow: 'HQ and Store Console',
+    title: 'Sign In',
+    subtitle: 'Use your account to access the operations console.',
+    description: 'After signing in, menus and permissions are loaded by role for stores, tables, orders, devices, products, and members.',
+    username: 'Username',
+    usernamePlaceholder: 'Enter your username',
+    password: 'Password',
+    passwordPlaceholder: 'Enter your password',
+    submit: 'Sign In',
+    failed: 'Sign in failed. Check your username and password.',
   },
   menu: {
     dashboard: 'Dashboard',

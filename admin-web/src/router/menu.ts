@@ -60,3 +60,8 @@ export const menuItems: MenuItem[] = [
     i18nKey: 'menu.members',
   },
 ];
+
+export const menuItemMap = menuItems.reduce<Record<string, MenuItem>>((result, item) => {
+  result[item.path] = item;
+  return result;
+}, {});

@@ -57,4 +57,8 @@ public class AuthService {
         }
         return user;
     }
+
+    public void logout(String token) {
+        tokenStore.remove(token);
+    }
 }

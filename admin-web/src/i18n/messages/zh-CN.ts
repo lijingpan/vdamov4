@@ -10,6 +10,19 @@ export default {
   },
   header: {
     language: '语言',
+    logout: '退出登录',
+  },
+  login: {
+    eyebrow: '总部与门店后台',
+    title: '登录后台',
+    subtitle: '使用你的账号进入门店运营管理台。',
+    description: '登录后可按角色获取门店、桌位、订单、设备、商品和会员等后台菜单与权限能力。',
+    username: '账号',
+    usernamePlaceholder: '请输入账号',
+    password: '密码',
+    passwordPlaceholder: '请输入密码',
+    submit: '登录',
+    failed: '登录失败，请检查账号和密码',
   },
   menu: {
     dashboard: '控制台',

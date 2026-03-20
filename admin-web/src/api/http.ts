@@ -8,52 +8,30 @@ interface ApiResponse<T> {
   data: T;
 }
 
-interface LoginData {
-  token: string;
+export class ApiError extends Error {
+  status: number;
+
+  constructor(message: string, status = 500) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
 }
 
-let loginTask: Promise<void> | null = null;
-
-function getToken(): string | null {
+export function getToken(): string | null {
   return localStorage.getItem(TOKEN_STORAGE_KEY);
 }
 
-function setToken(token: string): void {
+export function setToken(token: string): void {
   localStorage.setItem(TOKEN_STORAGE_KEY, token);
 }
 
-function getLocale(): string {
+export function clearToken(): void {
+  localStorage.removeItem(TOKEN_STORAGE_KEY);
+}
+
+export function getLocale(): string {
   return localStorage.getItem(LOCALE_STORAGE_KEY) ?? 'zh-CN';
-}
-
-async function doLogin(): Promise<void> {
-  const username = import.meta.env.VITE_DEMO_USERNAME ?? 'admin';
-  const password = import.meta.env.VITE_DEMO_PASSWORD ?? 'admin123';
-  const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept-Language': getLocale(),
-    },
-    body: JSON.stringify({ username, password }),
-  });
-  const payload = (await response.json()) as ApiResponse<LoginData>;
-  if (!response.ok || payload.code !== 0 || !payload.data?.token) {
-    throw new Error(payload.message || 'Login failed');
-  }
-  setToken(payload.data.token);
-}
-
-async function ensureAuthToken(): Promise<void> {
-  if (getToken()) {
-    return;
-  }
-  if (!loginTask) {
-    loginTask = doLogin().finally(() => {
-      loginTask = null;
-    });
-  }
-  await loginTask;
 }
 
 export function toQueryString(
@@ -77,15 +55,22 @@ export async function request<T>(
   path: string,
   init?: RequestInit,
   query?: Record<string, string | number | boolean | null | undefined>,
+  options?: {
+    auth?: boolean;
+  },
 ): Promise<T> {
-  await ensureAuthToken();
-
   const headers = new Headers(init?.headers);
   headers.set('Accept-Language', getLocale());
-  headers.set('Content-Type', 'application/json');
+  if (!(init?.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
+  }
 
+  const requiresAuth = options?.auth !== false;
   const token = getToken();
-  if (token) {
+  if (requiresAuth) {
+    if (!token) {
+      throw new ApiError('Unauthorized', 401);
+    }
     headers.set('Authorization', `Bearer ${token}`);
   }
 
@@ -95,14 +80,18 @@ export async function request<T>(
   });
 
   if (response.status === 401) {
-    localStorage.removeItem(TOKEN_STORAGE_KEY);
-    await ensureAuthToken();
-    return request<T>(path, init, query);
+    clearToken();
   }
 
-  const payload = (await response.json()) as ApiResponse<T>;
-  if (!response.ok || payload.code !== 0) {
-    throw new Error(payload.message || 'Request failed');
+  let payload: ApiResponse<T> | null = null;
+  try {
+    payload = (await response.json()) as ApiResponse<T>;
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok || !payload || payload.code !== 0) {
+    throw new ApiError(payload?.message || 'Request failed', response.status);
   }
   return payload.data;
 }
