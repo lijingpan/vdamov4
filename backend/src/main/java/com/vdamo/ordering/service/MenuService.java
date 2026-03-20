@@ -8,8 +8,11 @@ import com.vdamo.ordering.mapper.SysRoleMenuMapper;
 import com.vdamo.ordering.model.MenuSummary;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 public class MenuService {
@@ -38,29 +41,52 @@ public class MenuService {
             return List.of();
         }
 
-        return sysMenuMapper.selectBatchIds(menuIds).stream()
+        List<SysMenuEntity> menus = sysMenuMapper.selectBatchIds(menuIds).stream()
+                .filter(menu -> menu != null)
                 .sorted(Comparator.comparing(SysMenuEntity::getSortOrder))
-                .map(this::toSummary)
-                .collect(Collectors.toList());
+                .toList();
+        return toSummaries(menus);
     }
 
-    public List<MenuSummary> listAll() {
-        return sysMenuMapper.selectList(new LambdaQueryWrapper<SysMenuEntity>()
-                        .orderByAsc(SysMenuEntity::getSortOrder))
-                .stream()
-                .map(this::toSummary)
+    public List<MenuSummary> listAll(String keyword) {
+        LambdaQueryWrapper<SysMenuEntity> wrapper = new LambdaQueryWrapper<SysMenuEntity>()
+                .orderByAsc(SysMenuEntity::getSortOrder);
+        if (StringUtils.hasText(keyword)) {
+            String keywordValue = keyword.trim();
+            wrapper.and(query -> query.like(SysMenuEntity::getName, keywordValue)
+                    .or()
+                    .like(SysMenuEntity::getRoute, keywordValue)
+                    .or()
+                    .like(SysMenuEntity::getPermissionCode, keywordValue));
+        }
+        List<SysMenuEntity> menus = sysMenuMapper.selectList(wrapper);
+        if (menus.isEmpty()) {
+            return List.of();
+        }
+        return toSummaries(menus);
+    }
+
+    private List<MenuSummary> toSummaries(List<SysMenuEntity> menus) {
+        Set<Long> parentIds = menus.stream()
+                .map(SysMenuEntity::getParentId)
+                .filter(parentId -> parentId != null)
+                .collect(Collectors.toSet());
+
+        Map<Long, String> parentNameById = parentIds.isEmpty()
+                ? Map.of()
+                : sysMenuMapper.selectBatchIds(parentIds).stream()
+                        .filter(parent -> parent != null)
+                        .collect(Collectors.toMap(SysMenuEntity::getId, SysMenuEntity::getName, (left, right) -> left));
+
+        return menus.stream()
+                .map(menu -> new MenuSummary(
+                        menu.getId(),
+                        menu.getParentId(),
+                        menu.getParentId() == null ? null : parentNameById.getOrDefault(menu.getParentId(), ""),
+                        menu.getName(),
+                        menu.getRoute(),
+                        menu.getPermissionCode(),
+                        menu.getSortOrder()))
                 .toList();
     }
-
-    private MenuSummary toSummary(SysMenuEntity entity) {
-        return new MenuSummary(
-                entity.getId(),
-                entity.getParentId(),
-                entity.getName(),
-                entity.getRoute(),
-                entity.getPermissionCode(),
-                entity.getSortOrder()
-        );
-    }
 }
-

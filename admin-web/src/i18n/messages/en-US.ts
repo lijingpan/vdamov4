@@ -32,6 +32,9 @@ export default {
     devices: 'Device Management',
     products: 'Product Management',
     members: 'Member Management',
+    users: 'User Management',
+    roles: 'Role Management',
+    menus: 'Menu Management',
   },
   common: {
     search: 'Search',
@@ -241,6 +244,49 @@ export default {
       phoneE164: 'International Phone',
     },
   },
+  user: {
+    filter: {
+      store: 'Store',
+      storePlaceholder: 'All stores',
+      status: 'Status',
+      statusPlaceholder: 'All statuses',
+      keyword: 'Keyword',
+      keywordPlaceholder: 'Username / name / role / store',
+    },
+    columns: {
+      username: 'Username',
+      displayName: 'Display Name',
+      enabled: 'Status',
+      roles: 'Roles',
+      stores: 'Stores',
+    },
+  },
+  role: {
+    filter: {
+      keyword: 'Keyword',
+      keywordPlaceholder: 'Role code / name / permission',
+    },
+    columns: {
+      code: 'Role Code',
+      name: 'Role Name',
+      menuCount: 'Menu Count',
+      userCount: 'User Count',
+      permissionCodes: 'Permission Summary',
+    },
+  },
+  menuManage: {
+    filter: {
+      keyword: 'Keyword',
+      keywordPlaceholder: 'Menu / route / permission',
+    },
+    columns: {
+      name: 'Menu Name',
+      parentName: 'Parent',
+      route: 'Route',
+      permissionCode: 'Permission Code',
+      sortOrder: 'Sort',
+    },
+  },
   page: {
     dashboard: {
       title: 'Dashboard',
@@ -269,6 +315,18 @@ export default {
     members: {
       title: 'Member Management',
       description: 'Maintain member records with international phone support.',
+    },
+    users: {
+      title: 'User Management',
+      description: 'Manage admin accounts, status, roles, and linked stores.',
+    },
+    roles: {
+      title: 'Role Management',
+      description: 'Review role codes, menu counts, and permission summaries.',
+    },
+    menus: {
+      title: 'Menu Management',
+      description: 'Review hierarchy, routes, permissions, and sort order.',
     },
   },
 };

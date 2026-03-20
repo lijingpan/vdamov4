@@ -22,6 +22,12 @@ public class PermissionService {
         return currentUser().storeIds();
     }
 
+    public void assertSuperAdmin() {
+        if (!currentUser().roleCodes().contains("SUPER_ADMIN")) {
+            throw new ForbiddenException("Super admin permission required");
+        }
+    }
+
     public void assertStoreAccess(Long storeId) {
         if (storeId == null) {
             return;

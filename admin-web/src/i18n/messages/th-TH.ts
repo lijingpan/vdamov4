@@ -32,6 +32,9 @@ export default {
     devices: 'จัดการอุปกรณ์',
     products: 'จัดการสินค้า',
     members: 'จัดการสมาชิก',
+    users: 'จัดการผู้ใช้',
+    roles: 'จัดการบทบาท',
+    menus: 'จัดการเมนู',
   },
   common: {
     search: 'ค้นหา',
@@ -241,6 +244,49 @@ export default {
       phoneE164: 'เบอร์สากล',
     },
   },
+  user: {
+    filter: {
+      store: 'สาขา',
+      storePlaceholder: 'ทุกสาขา',
+      status: 'สถานะ',
+      statusPlaceholder: 'ทุกสถานะ',
+      keyword: 'คำค้น',
+      keywordPlaceholder: 'บัญชี / ชื่อ / บทบาท / สาขา',
+    },
+    columns: {
+      username: 'บัญชีผู้ใช้',
+      displayName: 'ชื่อผู้ใช้',
+      enabled: 'สถานะ',
+      roles: 'บทบาท',
+      stores: 'สาขาที่เกี่ยวข้อง',
+    },
+  },
+  role: {
+    filter: {
+      keyword: 'คำค้น',
+      keywordPlaceholder: 'รหัสบทบาท / ชื่อ / สิทธิ์',
+    },
+    columns: {
+      code: 'รหัสบทบาท',
+      name: 'ชื่อบทบาท',
+      menuCount: 'จำนวนเมนู',
+      userCount: 'จำนวนผู้ใช้',
+      permissionCodes: 'สรุปสิทธิ์',
+    },
+  },
+  menuManage: {
+    filter: {
+      keyword: 'คำค้น',
+      keywordPlaceholder: 'ชื่อเมนู / route / สิทธิ์',
+    },
+    columns: {
+      name: 'ชื่อเมนู',
+      parentName: 'เมนูแม่',
+      route: 'เส้นทาง',
+      permissionCode: 'รหัสสิทธิ์',
+      sortOrder: 'ลำดับ',
+    },
+  },
   page: {
     dashboard: {
       title: 'แดชบอร์ด',
@@ -269,6 +315,18 @@ export default {
     members: {
       title: 'จัดการสมาชิก',
       description: 'ดูแลข้อมูลสมาชิกและรองรับเบอร์โทรต่างประเทศ',
+    },
+    users: {
+      title: 'จัดการผู้ใช้',
+      description: 'จัดการบัญชีผู้ใช้ สถานะ บทบาท และสาขาที่เกี่ยวข้อง',
+    },
+    roles: {
+      title: 'จัดการบทบาท',
+      description: 'ตรวจสอบรหัสบทบาท จำนวนเมนู และสรุปสิทธิ์',
+    },
+    menus: {
+      title: 'จัดการเมนู',
+      description: 'ตรวจสอบโครงสร้างเมนู เส้นทาง สิทธิ์ และลำดับ',
     },
   },
 };

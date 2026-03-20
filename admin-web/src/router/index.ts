@@ -3,11 +3,14 @@ import AdminLayout from '@/layouts/AdminLayout.vue';
 import DashboardView from '@/views/DashboardView.vue';
 import DeviceView from '@/views/DeviceView.vue';
 import LoginView from '@/views/LoginView.vue';
+import MenuView from '@/views/MenuView.vue';
 import MemberView from '@/views/MemberView.vue';
 import OrderView from '@/views/OrderView.vue';
 import ProductView from '@/views/ProductView.vue';
+import RoleView from '@/views/RoleView.vue';
 import StoreView from '@/views/StoreView.vue';
 import TableView from '@/views/TableView.vue';
+import UserView from '@/views/UserView.vue';
 import { ApiError } from '@/api/http';
 import { useAuthStore } from '@/stores/auth';
 import { pinia } from '@/stores';
@@ -60,6 +63,21 @@ const routes: RouteRecordRaw[] = [
         path: 'members',
         name: 'members',
         component: MemberView,
+      },
+      {
+        path: 'users',
+        name: 'users',
+        component: UserView,
+      },
+      {
+        path: 'roles',
+        name: 'roles',
+        component: RoleView,
+      },
+      {
+        path: 'menus',
+        name: 'menus',
+        component: MenuView,
       },
     ],
   },

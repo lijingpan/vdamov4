@@ -9,6 +9,7 @@ import com.vdamo.ordering.service.RoleService;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -40,8 +41,8 @@ public class MenuController {
     }
 
     @GetMapping
-    public ApiResponse<List<MenuSummary>> listAll() {
-        return ApiResponse.success(messageHelper.get("success.fetch"), menuService.listAll());
+    public ApiResponse<List<MenuSummary>> listAll(@RequestParam(required = false) String keyword) {
+        permissionService.assertSuperAdmin();
+        return ApiResponse.success(messageHelper.get("success.fetch"), menuService.listAll(keyword));
     }
 }
-

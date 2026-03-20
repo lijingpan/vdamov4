@@ -50,15 +50,16 @@ INSERT INTO da_menu (id, parent_id, name, route, permission_code, sort_order) VA
 (6, NULL, 'Product', '/products', 'product:view', 6),
 (7, NULL, 'Member', '/members', 'member:view', 7),
 (8, NULL, 'Role', '/roles', 'role:view', 8),
-(9, NULL, 'User', '/users', 'user:view', 9);
+(9, NULL, 'User', '/users', 'user:view', 9),
+(10, NULL, 'Menu', '/menus', 'menu:view', 10);
 
 INSERT INTO da_user_role (id, user_id, role_id) VALUES
 (1, 1, 1),
 (2, 2, 2);
 
 INSERT INTO da_role_menu (id, role_id, menu_id) VALUES
-(1, 1, 1), (2, 1, 2), (3, 1, 3), (4, 1, 4), (5, 1, 5), (6, 1, 6), (7, 1, 7), (8, 1, 8), (9, 1, 9),
-(10, 2, 1), (11, 2, 2), (12, 2, 3), (13, 2, 4), (14, 2, 5), (15, 2, 6), (16, 2, 7);
+(1, 1, 1), (2, 1, 2), (3, 1, 3), (4, 1, 4), (5, 1, 5), (6, 1, 6), (7, 1, 7), (8, 1, 8), (9, 1, 9), (10, 1, 10),
+(11, 2, 1), (12, 2, 2), (13, 2, 3), (14, 2, 4), (15, 2, 5), (16, 2, 6), (17, 2, 7);
 
 INSERT INTO da_user_store (id, user_id, store_id) VALUES
 (1, 1, 2), (2, 1, 54), (3, 2, 54);

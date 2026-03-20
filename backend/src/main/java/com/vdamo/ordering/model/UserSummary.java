@@ -8,7 +8,7 @@ public record UserSummary(
         String displayName,
         boolean enabled,
         List<String> roleCodes,
-        List<Long> storeIds
+        List<Long> storeIds,
+        List<String> storeNames
 ) {
 }
-

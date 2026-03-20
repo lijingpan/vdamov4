@@ -32,6 +32,9 @@ export default {
     devices: '设备管理',
     products: '商品管理',
     members: '会员管理',
+    users: '用户管理',
+    roles: '角色管理',
+    menus: '菜单管理',
   },
   common: {
     search: '查询',
@@ -241,6 +244,49 @@ export default {
       phoneE164: '国际手机号',
     },
   },
+  user: {
+    filter: {
+      store: '关联门店',
+      storePlaceholder: '全部门店',
+      status: '状态',
+      statusPlaceholder: '全部状态',
+      keyword: '关键词',
+      keywordPlaceholder: '账号 / 姓名 / 角色 / 门店',
+    },
+    columns: {
+      username: '账号',
+      displayName: '姓名',
+      enabled: '状态',
+      roles: '角色',
+      stores: '关联门店',
+    },
+  },
+  role: {
+    filter: {
+      keyword: '关键词',
+      keywordPlaceholder: '角色编码 / 名称 / 权限码',
+    },
+    columns: {
+      code: '角色编码',
+      name: '角色名称',
+      menuCount: '菜单数',
+      userCount: '用户数',
+      permissionCodes: '权限摘要',
+    },
+  },
+  menuManage: {
+    filter: {
+      keyword: '关键词',
+      keywordPlaceholder: '菜单名 / 路由 / 权限码',
+    },
+    columns: {
+      name: '菜单名称',
+      parentName: '父级菜单',
+      route: '路由',
+      permissionCode: '权限码',
+      sortOrder: '排序',
+    },
+  },
   page: {
     dashboard: {
       title: '控制台',
@@ -269,6 +315,18 @@ export default {
     members: {
       title: '会员管理',
       description: '维护会员资料并支持国际手机号查询。',
+    },
+    users: {
+      title: '用户管理',
+      description: '管理后台账号、启用状态、角色和关联门店。',
+    },
+    roles: {
+      title: '角色管理',
+      description: '查看角色编码、菜单数量和权限摘要。',
+    },
+    menus: {
+      title: '菜单管理',
+      description: '查看菜单层级、路由、权限码和排序。',
     },
   },
 };

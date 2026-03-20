@@ -1,12 +1,15 @@
 import type { Component } from 'vue';
 import {
+  CollectionTag,
   DataLine,
   Document,
   HomeFilled,
   OfficeBuilding,
   Operation,
   Platform,
+  Setting,
   UserFilled,
+  User,
 } from '@element-plus/icons-vue';
 
 export interface MenuItem {
@@ -58,6 +61,24 @@ export const menuItems: MenuItem[] = [
     path: '/members',
     icon: UserFilled,
     i18nKey: 'menu.members',
+  },
+  {
+    key: 'users',
+    path: '/users',
+    icon: User,
+    i18nKey: 'menu.users',
+  },
+  {
+    key: 'roles',
+    path: '/roles',
+    icon: Setting,
+    i18nKey: 'menu.roles',
+  },
+  {
+    key: 'menus',
+    path: '/menus',
+    icon: CollectionTag,
+    i18nKey: 'menu.menus',
   },
 ];
 
