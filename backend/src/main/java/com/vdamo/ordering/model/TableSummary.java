@@ -1,0 +1,12 @@
+package com.vdamo.ordering.model;
+
+public record TableSummary(
+        long id,
+        long storeId,
+        String areaName,
+        String tableName,
+        int capacity,
+        String status,
+        TableCurrentOrderSummary currentOrder
+) {
+}

@@ -1,0 +1,110 @@
+:root {
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: #1e2a3b;
+  background-color: #eef2f8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  min-height: 100vh;
+}
+
+.layout-root {
+  min-height: 100vh;
+}
+
+.layout-sidebar {
+  background: linear-gradient(180deg, #1b2d4a 0%, #132138 100%);
+  border-right: 1px solid #223451;
+  color: #dfe7f5;
+}
+
+.brand {
+  padding: 20px 18px 14px;
+  border-bottom: 1px solid #2a3f62;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #f0f6ff;
+}
+
+.brand p {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #93a6c7;
+}
+
+.side-menu {
+  border-right: none;
+  padding: 8px 10px;
+}
+
+.side-menu__item {
+  margin-bottom: 4px;
+  border-radius: 8px;
+}
+
+.side-menu__item.is-active {
+  background: rgba(86, 140, 255, 0.15);
+}
+
+.layout-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #d8e0ee;
+  background: #f8fbff;
+  padding: 0 20px;
+}
+
+.header-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #23324a;
+}
+
+.header-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #5f6f85;
+  font-size: 14px;
+}
+
+.lang-select {
+  width: 120px;
+}
+
+.layout-main {
+  padding: 20px;
+  background: radial-gradient(circle at top right, #f8fbff 0%, #eef2f8 45%, #e7edf6 100%);
+}
+
+.page-shell__header {
+  margin-bottom: 16px;
+}
+
+.page-shell__header h2 {
+  margin: 0;
+  font-size: 22px;
+  color: #1f3048;
+}
+
+.page-shell__header p {
+  margin: 6px 0 0;
+  color: #6a7c97;
+}
+
+.page-shell__card {
+  border: 1px solid #dce5f2;
+  border-radius: 12px;
+}
