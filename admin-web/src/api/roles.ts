@@ -73,6 +73,11 @@ export async function fetchRoles(query?: RoleQuery): Promise<RoleSummary[]> {
   return raw.map(toRoleSummary);
 }
 
+export async function fetchRoleDetail(id: number): Promise<RoleSummary> {
+  const raw = await request<unknown>(`/api/v1/roles/${id}`);
+  return toRoleSummary(raw);
+}
+
 export async function createRole(payload: RolePayload): Promise<RoleSummary> {
   const raw = await request<unknown>('/api/v1/roles', {
     method: 'POST',

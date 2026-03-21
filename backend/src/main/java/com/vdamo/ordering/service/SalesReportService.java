@@ -2,8 +2,12 @@ package com.vdamo.ordering.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.vdamo.ordering.entity.OrderEntity;
+import com.vdamo.ordering.entity.OrderItemEntity;
+import com.vdamo.ordering.entity.PaymentRecordEntity;
 import com.vdamo.ordering.entity.StoreEntity;
+import com.vdamo.ordering.mapper.OrderItemMapper;
 import com.vdamo.ordering.mapper.OrderMapper;
+import com.vdamo.ordering.mapper.PaymentRecordMapper;
 import com.vdamo.ordering.mapper.StoreMapper;
 import com.vdamo.ordering.model.SalesReportResponse;
 import java.nio.charset.StandardCharsets;
@@ -15,10 +19,12 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 public class SalesReportService {
@@ -34,15 +40,21 @@ public class SalesReportService {
     );
 
     private final OrderMapper orderMapper;
+    private final OrderItemMapper orderItemMapper;
+    private final PaymentRecordMapper paymentRecordMapper;
     private final StoreMapper storeMapper;
     private final PermissionService permissionService;
 
     public SalesReportService(
             OrderMapper orderMapper,
+            OrderItemMapper orderItemMapper,
+            PaymentRecordMapper paymentRecordMapper,
             StoreMapper storeMapper,
             PermissionService permissionService
     ) {
         this.orderMapper = orderMapper;
+        this.orderItemMapper = orderItemMapper;
+        this.paymentRecordMapper = paymentRecordMapper;
         this.storeMapper = storeMapper;
         this.permissionService = permissionService;
     }
@@ -59,6 +71,8 @@ public class SalesReportService {
         appendSummarySection(builder, report.summary());
         appendStoreSection(builder, report.storeRows());
         appendDailySection(builder, report.dailyTrend());
+        appendProductSection(builder, report.productRows());
+        appendPaymentMethodSection(builder, report.paymentMethodRows());
         // Add UTF-8 BOM so CSV opens correctly in spreadsheet tools.
         return ("\uFEFF" + builder).getBytes(StandardCharsets.UTF_8);
     }
@@ -100,6 +114,8 @@ public class SalesReportService {
         SummaryCounter summaryCounter = new SummaryCounter();
         Map<Long, SummaryCounter> storeCounterMap = initStoreCounterMap(reportStoreIds);
         Map<LocalDate, DailyCounter> dailyCounterMap = new TreeMap<>();
+        Map<ProductCounterKey, ProductCounter> productCounterMap = new LinkedHashMap<>();
+        Map<String, PaymentMethodCounter> paymentMethodCounterMap = new LinkedHashMap<>();
 
         for (OrderEntity order : orders) {
             long currentStoreId = order.getStoreId();
@@ -111,6 +127,37 @@ public class SalesReportService {
             summaryCounter.accept(order);
             storeCounter.accept(order);
             dailyCounter.accept(order);
+        }
+
+        List<Long> orderIds = orders.stream()
+                .map(OrderEntity::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        if (!orderIds.isEmpty()) {
+            List<OrderItemEntity> orderItems = orderItemMapper.selectList(
+                    new LambdaQueryWrapper<OrderItemEntity>()
+                            .in(OrderItemEntity::getOrderId, orderIds)
+                            .orderByAsc(OrderItemEntity::getId));
+            for (OrderItemEntity orderItem : orderItems) {
+                ProductCounterKey key = new ProductCounterKey(
+                        defaultLong(orderItem.getProductId()),
+                        defaultString(orderItem.getItemName()),
+                        defaultString(orderItem.getItemCode()));
+                ProductCounter counter = productCounterMap.computeIfAbsent(key, ignored -> new ProductCounter());
+                counter.accept(orderItem);
+            }
+
+            List<PaymentRecordEntity> paymentRecords = paymentRecordMapper.selectList(
+                    new LambdaQueryWrapper<PaymentRecordEntity>()
+                            .in(PaymentRecordEntity::getOrderId, orderIds)
+                            .orderByAsc(PaymentRecordEntity::getId));
+            for (PaymentRecordEntity paymentRecord : paymentRecords) {
+                String paymentMethod = normalizePaymentMethod(paymentRecord);
+                PaymentMethodCounter counter = paymentMethodCounterMap.computeIfAbsent(
+                        paymentMethod,
+                        ignored -> new PaymentMethodCounter());
+                counter.accept(paymentRecord);
+            }
         }
 
         List<SalesReportResponse.StoreRow> storeRows = new ArrayList<>();
@@ -139,10 +186,41 @@ public class SalesReportService {
                         entry.getValue().paidAmountInCent))
                 .toList();
 
+        List<SalesReportResponse.ProductRow> productRows = productCounterMap.entrySet().stream()
+                .map(entry -> new SalesReportResponse.ProductRow(
+                        entry.getKey().productId(),
+                        entry.getKey().productName(),
+                        entry.getKey().productCode(),
+                        entry.getValue().quantity,
+                        entry.getValue().orderIds.size(),
+                        entry.getValue().amountInCent))
+                .sorted((left, right) -> {
+                    int amountCompare = Integer.compare(right.amountInCent(), left.amountInCent());
+                    if (amountCompare != 0) {
+                        return amountCompare;
+                    }
+                    int quantityCompare = Integer.compare(right.quantity(), left.quantity());
+                    if (quantityCompare != 0) {
+                        return quantityCompare;
+                    }
+                    return left.productName().compareToIgnoreCase(right.productName());
+                })
+                .toList();
+
+        List<SalesReportResponse.PaymentMethodRow> paymentMethodRows = paymentMethodCounterMap.entrySet().stream()
+                .map(entry -> new SalesReportResponse.PaymentMethodRow(
+                        entry.getKey(),
+                        entry.getValue().paymentCount,
+                        entry.getValue().amountInCent))
+                .sorted((left, right) -> Integer.compare(right.amountInCent(), left.amountInCent()))
+                .toList();
+
         return new SalesReportResponse(
                 summaryCounter.toSummary(),
                 storeRows,
-                dailyTrend
+                dailyTrend,
+                productRows,
+                paymentMethodRows
         );
     }
 
@@ -194,6 +272,37 @@ public class SalesReportService {
                     .append(row.paidAmountInCent())
                     .append('\n');
         }
+        builder.append('\n');
+    }
+
+    private void appendProductSection(StringBuilder builder, List<SalesReportResponse.ProductRow> productRows) {
+        builder.append("Top Products").append('\n');
+        builder.append("productId,productName,productCode,quantity,orderCount,amountInCent")
+                .append('\n');
+        for (SalesReportResponse.ProductRow row : productRows) {
+            builder.append(row.productId()).append(',')
+                    .append(csvEscape(row.productName())).append(',')
+                    .append(csvEscape(row.productCode())).append(',')
+                    .append(row.quantity()).append(',')
+                    .append(row.orderCount()).append(',')
+                    .append(row.amountInCent())
+                    .append('\n');
+        }
+        builder.append('\n');
+    }
+
+    private void appendPaymentMethodSection(
+            StringBuilder builder,
+            List<SalesReportResponse.PaymentMethodRow> paymentMethodRows
+    ) {
+        builder.append("Payment Methods").append('\n');
+        builder.append("paymentMethod,paymentCount,amountInCent").append('\n');
+        for (SalesReportResponse.PaymentMethodRow row : paymentMethodRows) {
+            builder.append(csvEscape(row.paymentMethod())).append(',')
+                    .append(row.paymentCount()).append(',')
+                    .append(row.amountInCent())
+                    .append('\n');
+        }
     }
 
     private String csvEscape(String value) {
@@ -234,6 +343,24 @@ public class SalesReportService {
 
     private static int defaultInt(Integer value) {
         return value == null ? 0 : value;
+    }
+
+    private static long defaultLong(Long value) {
+        return value == null ? 0L : value;
+    }
+
+    private static String defaultString(String value) {
+        return value == null ? "" : value;
+    }
+
+    private String normalizePaymentMethod(PaymentRecordEntity paymentRecord) {
+        if (StringUtils.hasText(paymentRecord.getPaymentMethod())) {
+            return paymentRecord.getPaymentMethod().trim().toUpperCase();
+        }
+        if (StringUtils.hasText(paymentRecord.getPaymentChannel())) {
+            return paymentRecord.getPaymentChannel().trim().toUpperCase();
+        }
+        return "UNKNOWN";
     }
 
     private static final class SummaryCounter {
@@ -293,5 +420,36 @@ public class SalesReportService {
             grossAmountInCent += defaultInt(order.getPayableAmountInCent());
             paidAmountInCent += defaultInt(order.getPaidAmountInCent());
         }
+    }
+
+    private static final class ProductCounter {
+        private int quantity;
+        private int amountInCent;
+        private final Set<Long> orderIds = new java.util.LinkedHashSet<>();
+
+        private void accept(OrderItemEntity orderItem) {
+            quantity += defaultInt(orderItem.getQuantity());
+            amountInCent += defaultInt(orderItem.getPayableAmountInCent());
+            if (orderItem.getOrderId() != null) {
+                orderIds.add(orderItem.getOrderId());
+            }
+        }
+    }
+
+    private static final class PaymentMethodCounter {
+        private int paymentCount;
+        private int amountInCent;
+
+        private void accept(PaymentRecordEntity paymentRecord) {
+            paymentCount++;
+            amountInCent += defaultInt(paymentRecord.getPaidAmountInCent());
+        }
+    }
+
+    private record ProductCounterKey(
+            long productId,
+            String productName,
+            String productCode
+    ) {
     }
 }

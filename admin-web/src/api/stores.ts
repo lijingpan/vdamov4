@@ -84,6 +84,11 @@ export async function fetchStores(query?: StoreQuery): Promise<StoreSummary[]> {
   return raw.map(toStoreSummary);
 }
 
+export async function fetchStoreDetail(id: number): Promise<StoreSummary> {
+  const raw = await request<unknown>(`/api/v1/stores/${id}`);
+  return toStoreSummary(raw);
+}
+
 export async function createStore(payload: StorePayload): Promise<StoreSummary> {
   const raw = await request<unknown>('/api/v1/stores', {
     method: 'POST',

@@ -25,6 +25,8 @@ import org.springframework.util.StringUtils;
 @Service
 public class RoleService {
 
+    private static final String SUPER_ADMIN_ROLE_CODE = "SUPER_ADMIN";
+
     private final SysRoleMapper sysRoleMapper;
     private final SysRoleMenuMapper sysRoleMenuMapper;
     private final SysUserRoleMapper sysUserRoleMapper;
@@ -109,6 +111,10 @@ public class RoleService {
                 .toList();
     }
 
+    public RoleSummary getById(Long id) {
+        return getSummary(id);
+    }
+
     public RoleSummary create(RoleUpsertRequest request) {
         SysRoleEntity entity = new SysRoleEntity();
         entity.setId(idGenerator.nextId());
@@ -118,8 +124,15 @@ public class RoleService {
         return getSummary(entity.getId());
     }
 
+    public RoleSummary getById(Long id) {
+        return getSummary(id);
+    }
+
     public RoleSummary update(Long id, RoleUpsertRequest request) {
         SysRoleEntity entity = requireRole(id);
+        if (SUPER_ADMIN_ROLE_CODE.equalsIgnoreCase(entity.getCode())) {
+            throw new BadRequestException("Super admin role cannot be modified");
+        }
         applyRoleValues(entity, request);
         sysRoleMapper.updateById(entity);
         syncRoleMenus(id, request.menuIds());
@@ -128,7 +141,7 @@ public class RoleService {
 
     public void delete(Long id) {
         SysRoleEntity entity = requireRole(id);
-        if ("SUPER_ADMIN".equalsIgnoreCase(entity.getCode())) {
+        if (SUPER_ADMIN_ROLE_CODE.equalsIgnoreCase(entity.getCode())) {
             throw new BadRequestException("Super admin role cannot be deleted");
         }
 

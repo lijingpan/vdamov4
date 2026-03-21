@@ -17,12 +17,7 @@
       <el-form :inline="true" class="filter-form">
         <el-form-item :label="t('salesReport.filter.store')">
           <el-select v-model="storeId" clearable :placeholder="t('salesReport.filter.storePlaceholder')">
-            <el-option
-              v-for="item in storeOptions"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            />
+            <el-option v-for="item in storeOptions" :key="item.id" :label="item.name" :value="item.id" />
           </el-select>
         </el-form-item>
         <el-form-item :label="t('salesReport.filter.dateRange')">
@@ -81,10 +76,7 @@
         </el-col>
         <el-col :xs="12" :md="6">
           <el-card shadow="hover">
-            <el-statistic
-              :title="t('salesReport.summary.avgOrderAmount')"
-              :value="formatCurrency(summary.averageOrderAmountInCent)"
-            />
+            <el-statistic :title="t('salesReport.summary.avgOrderAmount')" :value="formatCurrency(summary.averageOrderAmountInCent)" />
           </el-card>
         </el-col>
       </el-row>
@@ -96,16 +88,8 @@
         <el-table :data="storeRows" stripe border>
           <el-table-column prop="storeName" :label="t('salesReport.byStore.columns.storeName')" min-width="180" />
           <el-table-column prop="totalOrders" :label="t('salesReport.byStore.columns.totalOrders')" min-width="110" />
-          <el-table-column
-            prop="completedOrders"
-            :label="t('salesReport.byStore.columns.completedOrders')"
-            min-width="110"
-          />
-          <el-table-column
-            prop="inProgressOrders"
-            :label="t('salesReport.byStore.columns.inProgressOrders')"
-            min-width="110"
-          />
+          <el-table-column prop="completedOrders" :label="t('salesReport.byStore.columns.completedOrders')" min-width="110" />
+          <el-table-column prop="inProgressOrders" :label="t('salesReport.byStore.columns.inProgressOrders')" min-width="110" />
           <el-table-column :label="t('salesReport.byStore.columns.revenue')" min-width="130">
             <template #default="{ row }">
               {{ formatCurrency(row.revenueInCent) }}
@@ -121,11 +105,7 @@
               {{ formatCurrency(row.discountInCent) }}
             </template>
           </el-table-column>
-          <el-table-column
-            prop="appendOrderCount"
-            :label="t('salesReport.byStore.columns.appendOrders')"
-            min-width="110"
-          />
+          <el-table-column prop="appendOrderCount" :label="t('salesReport.byStore.columns.appendOrders')" min-width="110" />
           <el-table-column :label="t('salesReport.byStore.columns.avgOrderAmount')" min-width="130">
             <template #default="{ row }">
               {{ formatCurrency(row.averageOrderAmountInCent) }}
@@ -141,16 +121,8 @@
         <el-table :data="dateRows" stripe border>
           <el-table-column prop="date" :label="t('salesReport.byDate.columns.date')" min-width="140" />
           <el-table-column prop="totalOrders" :label="t('salesReport.byDate.columns.totalOrders')" min-width="110" />
-          <el-table-column
-            prop="completedOrders"
-            :label="t('salesReport.byDate.columns.completedOrders')"
-            min-width="110"
-          />
-          <el-table-column
-            prop="inProgressOrders"
-            :label="t('salesReport.byDate.columns.inProgressOrders')"
-            min-width="110"
-          />
+          <el-table-column prop="completedOrders" :label="t('salesReport.byDate.columns.completedOrders')" min-width="110" />
+          <el-table-column prop="inProgressOrders" :label="t('salesReport.byDate.columns.inProgressOrders')" min-width="110" />
           <el-table-column :label="t('salesReport.byDate.columns.revenue')" min-width="130">
             <template #default="{ row }">
               {{ formatCurrency(row.revenueInCent) }}
@@ -163,6 +135,54 @@
           </el-table-column>
         </el-table>
       </el-card>
+
+      <el-row :gutter="12" class="section-row">
+        <el-col :xs="24" :xl="14">
+          <el-card shadow="never" class="analysis-card">
+            <template #header>
+              <span>{{ t('salesReport.sections.topProducts') }}</span>
+            </template>
+            <el-table :data="productRows" stripe border>
+              <el-table-column type="index" :label="t('salesReport.byProduct.columns.rank')" width="72" />
+              <el-table-column prop="productName" :label="t('salesReport.byProduct.columns.productName')" min-width="180" />
+              <el-table-column prop="productCode" :label="t('salesReport.byProduct.columns.productCode')" min-width="140" />
+              <el-table-column prop="quantity" :label="t('salesReport.byProduct.columns.quantity')" min-width="100" />
+              <el-table-column prop="orderCount" :label="t('salesReport.byProduct.columns.orderCount')" min-width="110" />
+              <el-table-column :label="t('salesReport.byProduct.columns.amount')" min-width="140">
+                <template #default="{ row }">
+                  {{ formatCurrency(row.amountInCent) }}
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-card>
+        </el-col>
+
+        <el-col :xs="24" :xl="10">
+          <el-card shadow="never" class="analysis-card">
+            <template #header>
+              <span>{{ t('salesReport.sections.paymentMethods') }}</span>
+            </template>
+            <el-table :data="paymentMethodRows" stripe border>
+              <el-table-column prop="paymentMethod" :label="t('salesReport.byPaymentMethod.columns.paymentMethod')" min-width="160">
+                <template #default="{ row }">
+                  {{ paymentMethodLabel(row.paymentMethod) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="paymentCount" :label="t('salesReport.byPaymentMethod.columns.paymentCount')" min-width="110" />
+              <el-table-column :label="t('salesReport.byPaymentMethod.columns.amount')" min-width="140">
+                <template #default="{ row }">
+                  {{ formatCurrency(row.amountInCent) }}
+                </template>
+              </el-table-column>
+              <el-table-column :label="t('salesReport.byPaymentMethod.columns.share')" min-width="120">
+                <template #default="{ row }">
+                  {{ paymentShare(row.amountInCent) }}
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-card>
+        </el-col>
+      </el-row>
     </div>
   </PageShell>
 </template>
@@ -172,16 +192,23 @@ import { computed, onMounted, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Download, RefreshRight } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
-import type { SalesByDate, SalesByStore, SalesSummary } from '@/api/sales-reports';
+import type {
+  SalesByDate,
+  SalesByPaymentMethod,
+  SalesByProduct,
+  SalesByStore,
+  SalesSummary,
+} from '@/api/sales-reports';
 import { exportSalesReport, fetchSalesReport } from '@/api/sales-reports';
 import type { StoreSummary } from '@/api/stores';
 import { fetchStores } from '@/api/stores';
 import PageShell from '@/components/PageShell.vue';
 import { useAuthStore } from '@/stores/auth';
+import { formatMoneyFromCent } from '@/utils/currency';
 
 type DateRangeModel = [string, string] | [];
 
-const { t } = useI18n();
+const { locale, t } = useI18n();
 const authStore = useAuthStore();
 
 const loading = ref(false);
@@ -202,10 +229,28 @@ const summary = ref<SalesSummary>({
 });
 const storeRows = ref<SalesByStore[]>([]);
 const dateRows = ref<SalesByDate[]>([]);
+const productRows = ref<SalesByProduct[]>([]);
+const paymentMethodRows = ref<SalesByPaymentMethod[]>([]);
 const canExportSalesReport = computed(() => authStore.hasPermission('sales.report:export'));
 
 function formatCurrency(valueInCent: number): string {
-  return `¥ ${(valueInCent / 100).toFixed(2)}`;
+  return formatMoneyFromCent(valueInCent, locale.value);
+}
+
+function paymentMethodLabel(paymentMethod: string): string {
+  if (!paymentMethod) {
+    return t('salesReport.byPaymentMethod.unknown');
+  }
+  const key = `salesReport.paymentMethod.${paymentMethod}`;
+  const label = t(key);
+  return label === key ? paymentMethod : label;
+}
+
+function paymentShare(amountInCent: number): string {
+  if (summary.value.paidInCent <= 0) {
+    return '0%';
+  }
+  return `${((amountInCent / summary.value.paidInCent) * 100).toFixed(1)}%`;
 }
 
 function resetFilters() {
@@ -238,6 +283,8 @@ async function loadReport() {
     summary.value = response.summary;
     storeRows.value = response.byStore;
     dateRows.value = response.byDate;
+    productRows.value = response.byProduct;
+    paymentMethodRows.value = response.byPaymentMethod;
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : t('common.requestFailed');
   } finally {
@@ -276,5 +323,9 @@ onMounted(async () => {
 
 .section-row {
   margin-bottom: 12px;
+}
+
+.analysis-card {
+  height: 100%;
 }
 </style>

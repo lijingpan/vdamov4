@@ -46,6 +46,12 @@ public class UserController {
         return ApiResponse.success(messageHelper.get("success.fetch"), userService.listAll(keyword, enabled, storeId));
     }
 
+    @GetMapping("/{id}")
+    public ApiResponse<UserSummary> detail(@PathVariable Long id) {
+        permissionService.assertPermission("user:view");
+        return ApiResponse.success(messageHelper.get("success.fetch"), userService.getById(id));
+    }
+
     @PostMapping
     public ApiResponse<UserSummary> create(@Valid @RequestBody UserUpsertRequest request) {
         permissionService.assertPermission("user:create");

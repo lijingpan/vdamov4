@@ -222,10 +222,11 @@ import type { OrderDetail } from '@/api/orders';
 import { completeOrder, fetchOrderDetail, updateOrderPaymentStatus, updateOrderStatus } from '@/api/orders';
 import PageShell from '@/components/PageShell.vue';
 import { useAuthStore } from '@/stores/auth';
+import { formatMoneyFromCent } from '@/utils/currency';
 
 const route = useRoute();
 const router = useRouter();
-const { t } = useI18n();
+const { locale, t } = useI18n();
 const authStore = useAuthStore();
 
 const loading = ref(false);
@@ -262,7 +263,7 @@ const orderStatusOptions = [
 const paymentStatusOptions = ['UNPAID', 'PARTIAL', 'PAID', 'REFUNDED'];
 
 function formatCurrency(valueInCent: number): string {
-  return `¥ ${(valueInCent / 100).toFixed(2)}`;
+  return formatMoneyFromCent(valueInCent, locale.value);
 }
 
 function statusType(status: string): 'success' | 'warning' | 'danger' | 'info' {

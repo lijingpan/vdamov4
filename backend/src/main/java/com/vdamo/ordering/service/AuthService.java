@@ -36,8 +36,13 @@ public class AuthService {
         List<Long> roleIds = roles.stream().map(SysRoleEntity::getId).toList();
         List<String> roleCodes = roles.stream().map(SysRoleEntity::getCode).toList();
         List<Long> storeIds = userService.listStoreIds(user.getId());
-        List<String> permissionCodes = menuService.listPermissionCodesByRoleIds(roleIds);
-        List<MenuSummary> menus = menuService.listCurrentByRoleIds(roleIds);
+        boolean isSuperAdmin = roleCodes.stream().anyMatch("SUPER_ADMIN"::equalsIgnoreCase);
+        List<String> permissionCodes = isSuperAdmin
+                ? menuService.listAllPermissionCodes()
+                : menuService.listPermissionCodesByRoleIds(roleIds);
+        List<MenuSummary> menus = isSuperAdmin
+                ? menuService.listCurrentAll()
+                : menuService.listCurrentByRoleIds(roleIds);
 
         AuthenticatedUser authenticatedUser = new AuthenticatedUser(
                 user.getId(),

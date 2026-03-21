@@ -22,8 +22,10 @@ export const salesReportMessages = {
         avgOrderAmount: '客单价',
       },
       sections: {
-        byStore: '按门店汇总',
-        byDate: '按日期趋势',
+        byStore: '门店汇总',
+        byDate: '日期趋势',
+        topProducts: '商品销售排行',
+        paymentMethods: '支付方式汇总',
       },
       byStore: {
         columns: {
@@ -48,11 +50,38 @@ export const salesReportMessages = {
           paid: '实收',
         },
       },
+      byProduct: {
+        columns: {
+          rank: '排名',
+          productName: '商品名称',
+          productCode: '商品编码',
+          quantity: '销量',
+          orderCount: '订单数',
+          amount: '销售额',
+        },
+      },
+      byPaymentMethod: {
+        unknown: '未知方式',
+        columns: {
+          paymentMethod: '支付方式',
+          paymentCount: '支付笔数',
+          amount: '收款金额',
+          share: '占比',
+        },
+      },
+      paymentMethod: {
+        CASH: '现金',
+        CARD: '银行卡',
+        PROMPTPAY: 'PromptPay',
+        ALIPAY: '支付宝',
+        WECHAT: '微信支付',
+        UNKNOWN: '未知方式',
+      },
     },
     page: {
       salesReports: {
         title: '销售报表',
-        description: '查看经营概览、门店汇总和按日销售趋势。',
+        description: '查看经营总览、门店汇总、趋势、商品排行和支付方式结构。',
       },
     },
   },
@@ -81,6 +110,8 @@ export const salesReportMessages = {
       sections: {
         byStore: 'Summary By Store',
         byDate: 'Trend By Date',
+        topProducts: 'Top Products',
+        paymentMethods: 'Payment Methods',
       },
       byStore: {
         columns: {
@@ -103,16 +134,40 @@ export const salesReportMessages = {
           inProgressOrders: 'In Progress',
           revenue: 'Revenue',
           paid: 'Paid',
-          discount: 'Discount',
-          appendOrders: 'Append Orders',
-          avgOrderAmount: 'Avg Order Amount',
         },
+      },
+      byProduct: {
+        columns: {
+          rank: 'Rank',
+          productName: 'Product',
+          productCode: 'Code',
+          quantity: 'Qty',
+          orderCount: 'Orders',
+          amount: 'Amount',
+        },
+      },
+      byPaymentMethod: {
+        unknown: 'Unknown',
+        columns: {
+          paymentMethod: 'Payment Method',
+          paymentCount: 'Transactions',
+          amount: 'Amount',
+          share: 'Share',
+        },
+      },
+      paymentMethod: {
+        CASH: 'Cash',
+        CARD: 'Card',
+        PROMPTPAY: 'PromptPay',
+        ALIPAY: 'Alipay',
+        WECHAT: 'WeChat Pay',
+        UNKNOWN: 'Unknown',
       },
     },
     page: {
       salesReports: {
         title: 'Sales Reports',
-        description: 'Review summary metrics, store-level aggregates, and daily trends.',
+        description: 'Review summary metrics, store-level aggregates, daily trends, product rankings, and payment mix.',
       },
     },
   },
@@ -131,16 +186,18 @@ export const salesReportMessages = {
       summary: {
         totalOrders: 'จำนวนออเดอร์ทั้งหมด',
         completedOrders: 'ออเดอร์ที่เสร็จสิ้น',
-        inProgressOrders: 'ออเดอร์ที่กำลังดำเนินการ',
+        inProgressOrders: 'ออเดอร์ระหว่างดำเนินการ',
         revenue: 'ยอดขาย',
-        paid: 'ยอดชำระแล้ว',
+        paid: 'ยอดรับชำระ',
         discount: 'ส่วนลด',
         appendOrders: 'ออเดอร์เพิ่มรายการ',
         avgOrderAmount: 'ยอดเฉลี่ยต่อบิล',
       },
       sections: {
         byStore: 'สรุปตามสาขา',
-        byDate: 'แนวโน้มรายวัน',
+        byDate: 'แนวโน้มตามวันที่',
+        topProducts: 'อันดับสินค้าขายดี',
+        paymentMethods: 'สรุปช่องทางชำระเงิน',
       },
       byStore: {
         columns: {
@@ -149,10 +206,10 @@ export const salesReportMessages = {
           completedOrders: 'เสร็จสิ้น',
           inProgressOrders: 'กำลังดำเนินการ',
           revenue: 'ยอดขาย',
-          paid: 'ยอดชำระ',
+          paid: 'รับชำระ',
           discount: 'ส่วนลด',
-          appendOrders: 'ออเดอร์เพิ่ม',
-          avgOrderAmount: 'เฉลี่ยต่อบิล',
+          appendOrders: 'ออเดอร์เพิ่มรายการ',
+          avgOrderAmount: 'ยอดเฉลี่ยต่อบิล',
         },
       },
       byDate: {
@@ -162,14 +219,41 @@ export const salesReportMessages = {
           completedOrders: 'เสร็จสิ้น',
           inProgressOrders: 'กำลังดำเนินการ',
           revenue: 'ยอดขาย',
-          paid: 'ยอดชำระ',
+          paid: 'รับชำระ',
         },
+      },
+      byProduct: {
+        columns: {
+          rank: 'อันดับ',
+          productName: 'สินค้า',
+          productCode: 'รหัสสินค้า',
+          quantity: 'จำนวนขาย',
+          orderCount: 'จำนวนบิล',
+          amount: 'ยอดขาย',
+        },
+      },
+      byPaymentMethod: {
+        unknown: 'ไม่ระบุ',
+        columns: {
+          paymentMethod: 'ช่องทางชำระเงิน',
+          paymentCount: 'จำนวนครั้ง',
+          amount: 'ยอดรับ',
+          share: 'สัดส่วน',
+        },
+      },
+      paymentMethod: {
+        CASH: 'เงินสด',
+        CARD: 'บัตร',
+        PROMPTPAY: 'พร้อมเพย์',
+        ALIPAY: 'อาลีเพย์',
+        WECHAT: 'วีแชทเพย์',
+        UNKNOWN: 'ไม่ระบุ',
       },
     },
     page: {
       salesReports: {
         title: 'รายงานการขาย',
-        description: 'ดูภาพรวมการดำเนินงาน สรุปตามสาขา และแนวโน้มยอดขายรายวัน',
+        description: 'ดูภาพรวมยอดขาย สรุปตามสาขา แนวโน้มรายวัน อันดับสินค้า และสัดส่วนการชำระเงิน',
       },
     },
   },

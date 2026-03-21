@@ -92,6 +92,11 @@ export async function fetchUsers(query?: UserQuery): Promise<UserSummary[]> {
   return raw.map(toUserSummary);
 }
 
+export async function fetchUserDetail(id: number): Promise<UserSummary> {
+  const raw = await request<unknown>(`/api/v1/users/${id}`);
+  return toUserSummary(raw);
+}
+
 export async function createUser(payload: UserPayload): Promise<UserSummary> {
   const raw = await request<unknown>('/api/v1/users', {
     method: 'POST',

@@ -66,6 +66,9 @@ locale.value = localeStore.locale;
 const selectedLocale = ref<AppLocale>(localeStore.locale);
 const activeMenu = computed(() => route.path);
 const visibleMenuItems = computed(() => {
+  if (authStore.isSuperAdmin) {
+    return menuItems;
+  }
   const allowed = new Set(authStore.allowedRoutes);
   return menuItems.filter((item) => allowed.has(item.path));
 });

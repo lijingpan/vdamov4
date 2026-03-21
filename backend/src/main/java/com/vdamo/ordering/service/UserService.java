@@ -2,6 +2,7 @@ package com.vdamo.ordering.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.vdamo.ordering.common.exception.BadRequestException;
+import com.vdamo.ordering.common.exception.ForbiddenException;
 import com.vdamo.ordering.common.exception.NotFoundException;
 import com.vdamo.ordering.common.support.IdGenerator;
 import com.vdamo.ordering.entity.StoreEntity;
@@ -24,6 +25,8 @@ import org.springframework.util.StringUtils;
 
 @Service
 public class UserService {
+
+    private static final String SUPER_ADMIN_ROLE_CODE = "SUPER_ADMIN";
 
     private final SysUserMapper sysUserMapper;
     private final SysUserRoleMapper sysUserRoleMapper;
@@ -55,6 +58,9 @@ public class UserService {
     }
 
     public List<UserSummary> listAll(String keyword, Boolean enabled, Long storeId) {
+        if (storeId != null) {
+            permissionService.assertStoreAccess(storeId);
+        }
         LambdaQueryWrapper<SysUserEntity> wrapper = new LambdaQueryWrapper<SysUserEntity>()
                 .orderByAsc(SysUserEntity::getId);
         if (enabled != null) {
@@ -69,6 +75,7 @@ public class UserService {
 
         List<UserSummary> summaries = sysUserMapper.selectList(wrapper).stream()
                 .map(this::toSummary)
+                .filter(this::canManageUser)
                 .toList();
         if (storeId == null) {
             return summaries;
@@ -76,6 +83,12 @@ public class UserService {
         return summaries.stream()
                 .filter(summary -> summary.storeIds().contains(storeId))
                 .toList();
+    }
+
+    public UserSummary getById(Long id) {
+        SysUserEntity entity = requireUser(id);
+        assertManageableUser(entity);
+        return toSummary(entity);
     }
 
     public UserSummary create(UserUpsertRequest request) {
@@ -95,6 +108,7 @@ public class UserService {
 
     public UserSummary update(Long id, UserUpsertRequest request) {
         SysUserEntity entity = requireUser(id);
+        assertManageableUser(entity);
         applyUserValues(entity, request);
         if (StringUtils.hasText(request.password())) {
             entity.setPassword(request.password().trim());
@@ -110,6 +124,7 @@ public class UserService {
         if (permissionService.currentUser().userId().equals(id)) {
             throw new BadRequestException("Current user cannot be deleted");
         }
+        assertManageableUser(entity);
 
         sysUserRoleMapper.delete(new LambdaQueryWrapper<SysUserRoleEntity>().eq(SysUserRoleEntity::getUserId, id));
         sysUserStoreMapper.delete(new LambdaQueryWrapper<SysUserStoreEntity>().eq(SysUserStoreEntity::getUserId, id));
@@ -177,8 +192,10 @@ public class UserService {
         List<Long> storeIds = normalizeIds(request.storeIds());
 
         validateUsernameUnique(entity.getId(), username);
-        validateRoleIds(roleIds);
+        List<SysRoleEntity> roles = validateRoleIds(roleIds);
         validateStoreIds(storeIds);
+        validateAssignableRoles(roles);
+        validateAssignableStores(storeIds);
 
         entity.setUsername(username);
         entity.setDisplayName(displayName);
@@ -195,16 +212,17 @@ public class UserService {
         }
     }
 
-    private void validateRoleIds(List<Long> roleIds) {
+    private List<SysRoleEntity> validateRoleIds(List<Long> roleIds) {
         if (roleIds.isEmpty()) {
             throw new BadRequestException("At least one role is required");
         }
-        long existingCount = sysRoleMapper.selectBatchIds(roleIds).stream()
+        List<SysRoleEntity> roles = sysRoleMapper.selectBatchIds(roleIds).stream()
                 .filter(item -> item != null)
-                .count();
-        if (existingCount != roleIds.size()) {
+                .toList();
+        if (roles.size() != roleIds.size()) {
             throw new BadRequestException("Some roles do not exist");
         }
+        return roles;
     }
 
     private void validateStoreIds(List<Long> storeIds) {
@@ -253,6 +271,54 @@ public class UserService {
             throw new NotFoundException("User not found");
         }
         return entity;
+    }
+
+    private boolean canManageUser(UserSummary summary) {
+        if (permissionService.isSuperAdmin()) {
+            return true;
+        }
+        if (summary.roleCodes().contains(SUPER_ADMIN_ROLE_CODE)) {
+            return false;
+        }
+        List<Long> currentStoreIds = permissionService.currentStoreIds();
+        return summary.storeIds().stream().anyMatch(currentStoreIds::contains);
+    }
+
+    private void assertManageableUser(Long userId) {
+        assertManageableUser(requireUser(userId));
+    }
+
+    private void assertManageableUser(SysUserEntity entity) {
+        if (permissionService.isSuperAdmin()) {
+            return;
+        }
+        UserSummary summary = toSummary(entity);
+        if (!canManageUser(summary)) {
+            throw new ForbiddenException("User access denied");
+        }
+    }
+
+    private void validateAssignableRoles(List<SysRoleEntity> roles) {
+        if (permissionService.isSuperAdmin()) {
+            return;
+        }
+        boolean containsSuperAdmin = roles.stream()
+                .map(SysRoleEntity::getCode)
+                .anyMatch(SUPER_ADMIN_ROLE_CODE::equalsIgnoreCase);
+        if (containsSuperAdmin) {
+            throw new ForbiddenException("Super admin role cannot be assigned");
+        }
+    }
+
+    private void validateAssignableStores(List<Long> storeIds) {
+        if (permissionService.isSuperAdmin()) {
+            return;
+        }
+        List<Long> currentStoreIds = permissionService.currentStoreIds();
+        boolean allAllowed = storeIds.stream().allMatch(currentStoreIds::contains);
+        if (!allAllowed) {
+            throw new ForbiddenException("Store access denied");
+        }
     }
 
     private List<Long> normalizeIds(List<Long> ids) {

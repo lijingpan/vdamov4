@@ -42,6 +42,12 @@ public class RoleController {
         return ApiResponse.success(messageHelper.get("success.fetch"), roleService.listAll(keyword));
     }
 
+    @GetMapping("/{id}")
+    public ApiResponse<RoleSummary> detail(@PathVariable Long id) {
+        permissionService.assertPermission("role:view");
+        return ApiResponse.success(messageHelper.get("success.fetch"), roleService.getById(id));
+    }
+
     @PostMapping
     public ApiResponse<RoleSummary> create(@Valid @RequestBody RoleUpsertRequest request) {
         permissionService.assertPermission("role:create");

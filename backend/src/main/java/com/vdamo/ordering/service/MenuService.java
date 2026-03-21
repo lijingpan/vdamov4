@@ -48,12 +48,28 @@ public class MenuService {
                 .toList());
     }
 
+    public List<MenuSummary> listCurrentAll() {
+        return toSummaries(listAllEntities().stream()
+                .filter(menu -> MENU_TYPE_MENU.equals(resolveMenuType(menu)))
+                .filter(menu -> StringUtils.hasText(menu.getRoute()))
+                .toList());
+    }
+
     public List<MenuSummary> listByRoleIds(List<Long> roleIds) {
         return toSummaries(listEntitiesByRoleIds(roleIds));
     }
 
     public List<String> listPermissionCodesByRoleIds(List<Long> roleIds) {
         return listEntitiesByRoleIds(roleIds).stream()
+                .map(SysMenuEntity::getPermissionCode)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .sorted()
+                .toList();
+    }
+
+    public List<String> listAllPermissionCodes() {
+        return listAllEntities().stream()
                 .map(SysMenuEntity::getPermissionCode)
                 .filter(StringUtils::hasText)
                 .distinct()
@@ -78,6 +94,12 @@ public class MenuService {
             return List.of();
         }
         return toSummaries(menus);
+    }
+
+    private List<SysMenuEntity> listAllEntities() {
+        return sysMenuMapper.selectList(new LambdaQueryWrapper<SysMenuEntity>()
+                .orderByAsc(SysMenuEntity::getSortOrder)
+                .orderByAsc(SysMenuEntity::getId));
     }
 
     public MenuSummary create(MenuUpsertRequest request) {

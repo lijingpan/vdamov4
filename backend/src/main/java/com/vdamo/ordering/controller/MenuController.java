@@ -42,6 +42,9 @@ public class MenuController {
 
     @GetMapping("/current")
     public ApiResponse<List<MenuSummary>> currentMenus() {
+        if (permissionService.currentUser().roleCodes().contains("SUPER_ADMIN")) {
+            return ApiResponse.success(messageHelper.get("success.fetch"), menuService.listCurrentAll());
+        }
         Long userId = permissionService.currentUser().userId();
         List<Long> roleIds = roleService.listEntitiesByUserId(userId).stream().map(role -> role.getId()).toList();
         return ApiResponse.success(messageHelper.get("success.fetch"), menuService.listCurrentByRoleIds(roleIds));

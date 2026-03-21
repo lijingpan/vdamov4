@@ -107,6 +107,11 @@ public class StoreService {
                 .toList();
     }
 
+    public StoreSummary getById(Long id) {
+        permissionService.assertStoreAccess(id);
+        return toSummary(requireStore(id));
+    }
+
     public StoreSummary create(StoreUpsertRequest request) {
         permissionService.assertSuperAdmin();
 

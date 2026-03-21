@@ -150,7 +150,14 @@
       width="640px"
       destroy-on-close
     >
-      <el-form ref="formRef" :model="form" :rules="rules" label-position="top" class="dialog-form">
+    <el-form
+      ref="formRef"
+      :model="form"
+      :rules="rules"
+      label-position="top"
+      class="dialog-form"
+      v-loading="detailLoading"
+    >
         <el-form-item :label="t('store.form.name')" prop="name">
           <el-input v-model="form.name" :placeholder="t('store.form.namePlaceholder')" />
         </el-form-item>
@@ -235,7 +242,16 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
 import { Location, Plus, RefreshRight } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
-import { createStore, deleteStore, fetchStores, updateStore, updateStoreStatus, type StorePayload, type StoreSummary } from '@/api/stores';
+import {
+  createStore,
+  deleteStore,
+  fetchStoreDetail,
+  fetchStores,
+  updateStore,
+  updateStoreStatus,
+  type StorePayload,
+  type StoreSummary,
+} from '@/api/stores';
 import GoogleMapPickerDialog from '@/components/GoogleMapPickerDialog.vue';
 import PageShell from '@/components/PageShell.vue';
 import { useAuthStore } from '@/stores/auth';
@@ -261,6 +277,7 @@ const authStore = useAuthStore();
 
 const loading = ref(false);
 const submitting = ref(false);
+const detailLoading = ref(false);
 const errorMessage = ref('');
 const rows = ref<StoreSummary[]>([]);
 const formRef = ref<FormInstance>();
@@ -353,20 +370,28 @@ function openCreateDialog() {
   dialogVisible.value = true;
 }
 
-function openEditDialog(row: StoreSummary) {
+async function openEditDialog(row: StoreSummary) {
   if (!canUpdateStore.value) {
     return;
   }
   dialogMode.value = 'edit';
-  form.id = row.id;
-  form.name = row.name;
-  form.countryCode = row.countryCode;
-  form.address = row.address;
-  form.latitude = row.latitude;
-  form.longitude = row.longitude;
-  form.businessStatus = row.businessStatus;
-  form.businessTypes = [...row.businessTypes];
-  dialogVisible.value = true;
+  detailLoading.value = true;
+  try {
+    const detail = await fetchStoreDetail(row.id);
+    form.id = detail.id;
+    form.name = detail.name;
+    form.countryCode = detail.countryCode;
+    form.address = detail.address;
+    form.latitude = detail.latitude;
+    form.longitude = detail.longitude;
+    form.businessStatus = detail.businessStatus;
+    form.businessTypes = [...detail.businessTypes];
+    dialogVisible.value = true;
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : t('common.requestFailed'));
+  } finally {
+    detailLoading.value = false;
+  }
 }
 
 function openMapDialog() {

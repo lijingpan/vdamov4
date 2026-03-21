@@ -39,16 +39,16 @@ public class SysMenuEntity extends BaseEntity {
         this.name = name;
     }
 
-    public String getRoute() {
-        return route;
-    }
-
     public String getMenuType() {
         return menuType;
     }
 
     public void setMenuType(String menuType) {
         this.menuType = menuType;
+    }
+
+    public String getRoute() {
+        return route;
     }
 
     public void setRoute(String route) {

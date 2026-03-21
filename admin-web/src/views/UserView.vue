@@ -107,7 +107,14 @@
       width="620px"
       destroy-on-close
     >
-      <el-form ref="formRef" :model="form" :rules="rules" label-position="top" class="dialog-form">
+      <el-form
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        label-position="top"
+        class="dialog-form"
+        v-loading="detailLoading"
+      >
         <el-form-item :label="t('user.form.username')" prop="username">
           <el-input v-model="form.username" maxlength="64" :placeholder="t('user.form.usernamePlaceholder')" />
         </el-form-item>
@@ -152,7 +159,15 @@ import { Plus, RefreshRight } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
 import { fetchRoles, type RoleSummary } from '@/api/roles';
 import { fetchStores, type StoreSummary } from '@/api/stores';
-import { createUser, deleteUser, fetchUsers, updateUser, type UserPayload, type UserSummary } from '@/api/users';
+import {
+  createUser,
+  deleteUser,
+  fetchUserDetail,
+  fetchUsers,
+  updateUser,
+  type UserPayload,
+  type UserSummary,
+} from '@/api/users';
 import PageShell from '@/components/PageShell.vue';
 import { useAuthStore } from '@/stores/auth';
 
@@ -177,6 +192,7 @@ const authStore = useAuthStore();
 
 const loading = ref(false);
 const submitting = ref(false);
+const detailLoading = ref(false);
 const errorMessage = ref('');
 const rows = ref<UserSummary[]>([]);
 const roleOptions = ref<RoleSummary[]>([]);
@@ -201,12 +217,6 @@ const canUpdateUser = computed(() => authStore.hasPermission('user:update'));
 const canDeleteUser = computed(() => authStore.hasPermission('user:delete'));
 const enabledCount = computed(() => rows.value.filter((item) => item.enabled).length);
 const disabledCount = computed(() => rows.value.filter((item) => !item.enabled).length);
-const roleIdByCode = computed(() =>
-  roleOptions.value.reduce<Record<string, number>>((result, item) => {
-    result[item.code] = item.id;
-    return result;
-  }, {}),
-);
 const storeNameById = computed(() =>
   storeOptions.value.reduce<Record<number, string>>((result, item) => {
     result[item.id] = item.name;
@@ -254,31 +264,31 @@ function resetForm() {
   formRef.value?.clearValidate();
 }
 
-function inferRoleIds(row: UserSummary): number[] {
-  if (row.roleIds.length > 0) {
-    return [...row.roleIds];
-  }
-  return row.roleCodes
-    .map((code) => roleIdByCode.value[code])
-    .filter((item): item is number => typeof item === 'number');
-}
-
 function openCreateDialog() {
   dialogMode.value = 'create';
   resetForm();
   dialogVisible.value = true;
 }
 
-function openEditDialog(row: UserSummary) {
+async function openEditDialog(row: UserSummary) {
   dialogMode.value = 'edit';
-  form.id = row.id;
-  form.username = row.username;
-  form.password = '';
-  form.displayName = row.displayName;
-  form.enabled = row.enabled;
-  form.roleIds = inferRoleIds(row);
-  form.storeIds = [...row.storeIds];
-  dialogVisible.value = true;
+  resetForm();
+  detailLoading.value = true;
+  try {
+    const detail = await fetchUserDetail(row.id);
+    form.id = detail.id;
+    form.username = detail.username;
+    form.password = '';
+    form.displayName = detail.displayName;
+    form.enabled = detail.enabled;
+    form.roleIds = [...new Set(detail.roleIds)];
+    form.storeIds = [...new Set(detail.storeIds)];
+    dialogVisible.value = true;
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : t('common.requestFailed'));
+  } finally {
+    detailLoading.value = false;
+  }
 }
 
 async function loadUsers() {

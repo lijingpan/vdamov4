@@ -274,6 +274,7 @@ import type { StoreSummary } from '@/api/stores';
 import { fetchStores } from '@/api/stores';
 import PageShell from '@/components/PageShell.vue';
 import { useAuthStore } from '@/stores/auth';
+import { formatMoneyFromCent } from '@/utils/currency';
 
 interface OrderFilters {
   storeId?: number;
@@ -282,7 +283,7 @@ interface OrderFilters {
   keyword: string;
 }
 
-const { t } = useI18n();
+const { locale, t } = useI18n();
 const router = useRouter();
 const authStore = useAuthStore();
 
@@ -347,7 +348,7 @@ const selectedCount = computed(() => selectedRows.value.length);
 const selectedOrderIds = computed(() => selectedRows.value.map((item) => item.id));
 
 function formatCurrency(valueInCent: number): string {
-  return `¥ ${(valueInCent / 100).toFixed(2)}`;
+  return formatMoneyFromCent(valueInCent, locale.value);
 }
 
 function orderStatusLabel(status: string): string {

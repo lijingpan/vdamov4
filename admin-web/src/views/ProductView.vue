@@ -251,7 +251,7 @@
             <el-table :data="form.skus" size="small" border>
               <el-table-column :label="t('product.sku.columns.specName')" min-width="180">
                 <template #default="{ row }">
-                  {{ row.specName || t('product.sku.defaultSpec') }}
+                  {{ displaySkuSpecName(row.specKey, row.specName) }}
                 </template>
               </el-table-column>
               <el-table-column :label="t('product.sku.columns.price')" min-width="130">
@@ -368,6 +368,7 @@ import { fetchProductCategories, type ProductCategorySummary } from '@/api/produ
 import { fetchStores, type StoreSummary } from '@/api/stores';
 import PageShell from '@/components/PageShell.vue';
 import { useAuthStore } from '@/stores/auth';
+import { formatMoneyFromCent } from '@/utils/currency';
 
 interface ProductFilters {
   storeId?: number;
@@ -395,7 +396,7 @@ interface ProductFormModel {
   attrs: ProductAttr[];
 }
 
-const { t } = useI18n();
+const { locale, t } = useI18n();
 const authStore = useAuthStore();
 
 const productTypeOptions: ProductType[] = ['NORMAL', 'WEIGHED', 'ADD_ON', 'SET_MEAL'];
@@ -538,7 +539,7 @@ function createEmptyAttr(): ProductAttr {
 function createDefaultSku(): ProductSku {
   return {
     specKey: 'DEFAULT',
-    specName: 'Default',
+    specName: 'DEFAULT',
     skuCode: '',
     barcode: '',
     priceInCent: 0,
@@ -551,6 +552,13 @@ function createDefaultSku(): ProductSku {
     sortOrder: 1,
     active: true,
   };
+}
+
+function displaySkuSpecName(specKey: string, specName: string): string {
+  if (specKey === 'DEFAULT' || specName === 'DEFAULT' || specName === 'Default') {
+    return t('product.sku.defaultSpec');
+  }
+  return specName || t('product.sku.defaultSpec');
 }
 
 function normalizedSpecGroups(): ProductSpec[] {
@@ -585,7 +593,7 @@ function rebuildSkuRows() {
         ...createDefaultSku(),
         ...current,
         specKey: 'DEFAULT',
-        specName: 'Default',
+        specName: 'DEFAULT',
         weightUnitGram: form.weighedEnabled ? current.weightUnitGram || 100 : undefined,
         sortOrder: 1,
       },
@@ -618,7 +626,7 @@ function rebuildSkuRows() {
 }
 
 function formatCurrency(valueInCent: number): string {
-  return `$${(valueInCent / 100).toFixed(2)}`;
+  return formatMoneyFromCent(valueInCent, locale.value);
 }
 
 function formatPriceRange(minPriceInCent: number, maxPriceInCent: number): string {

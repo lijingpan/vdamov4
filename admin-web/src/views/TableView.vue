@@ -184,6 +184,7 @@ import {
 } from '@/api/tables';
 import PageShell from '@/components/PageShell.vue';
 import { useAuthStore } from '@/stores/auth';
+import { formatMoneyFromCent } from '@/utils/currency';
 
 interface Filters {
   storeId?: number;
@@ -200,7 +201,7 @@ interface TableFormModel {
   status: string;
 }
 
-const { t } = useI18n();
+const { locale, t } = useI18n();
 const authStore = useAuthStore();
 
 const loading = ref(false);
@@ -272,7 +273,7 @@ function statusTagType(status: string): 'success' | 'warning' | 'danger' | 'info
 }
 
 function formatCurrency(valueInCent: number): string {
-  return valueInCent > 0 ? `$${(valueInCent / 100).toFixed(2)}` : '-';
+  return valueInCent > 0 ? formatMoneyFromCent(valueInCent, locale.value) : '-';
 }
 
 function resetFilters() {

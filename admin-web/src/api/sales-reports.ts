@@ -39,10 +39,27 @@ export interface SalesByDate {
   paidInCent: number;
 }
 
+export interface SalesByProduct {
+  productId: number;
+  productName: string;
+  productCode: string;
+  quantity: number;
+  orderCount: number;
+  amountInCent: number;
+}
+
+export interface SalesByPaymentMethod {
+  paymentMethod: string;
+  paymentCount: number;
+  amountInCent: number;
+}
+
 export interface SalesReportData {
   summary: SalesSummary;
   byStore: SalesByStore[];
   byDate: SalesByDate[];
+  byProduct: SalesByProduct[];
+  byPaymentMethod: SalesByPaymentMethod[];
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -112,6 +129,27 @@ function mapByDate(raw: unknown): SalesByDate {
   };
 }
 
+function mapByProduct(raw: unknown): SalesByProduct {
+  const source = asRecord(raw);
+  return {
+    productId: asNumber(source.productId),
+    productName: asString(source.productName || source.itemName),
+    productCode: asString(source.productCode || source.itemCode),
+    quantity: asNumber(source.quantity || source.totalQuantity),
+    orderCount: asNumber(source.orderCount || source.totalOrders),
+    amountInCent: asNumber(source.amountInCent || source.totalAmountInCent || source.revenueInCent),
+  };
+}
+
+function mapByPaymentMethod(raw: unknown): SalesByPaymentMethod {
+  const source = asRecord(raw);
+  return {
+    paymentMethod: asString(source.paymentMethod || source.method || source.paymentChannel),
+    paymentCount: asNumber(source.paymentCount || source.count),
+    amountInCent: asNumber(source.amountInCent || source.totalAmountInCent || source.paidInCent),
+  };
+}
+
 export async function fetchSalesReport(query: SalesReportQuery): Promise<SalesReportData> {
   const raw = await request<unknown>(
     '/api/v1/reports/sales',
@@ -127,6 +165,12 @@ export async function fetchSalesReport(query: SalesReportQuery): Promise<SalesRe
     byDate: asArray(source.byDate || source.dailyTrend || source.dateTrends || source.dailyStats).map((item) =>
       mapByDate(item),
     ),
+    byProduct: asArray(source.byProduct || source.productRows || source.productStats || source.topProducts).map((item) =>
+      mapByProduct(item),
+    ),
+    byPaymentMethod: asArray(
+      source.byPaymentMethod || source.paymentMethodRows || source.paymentStats || source.paymentMethods,
+    ).map((item) => mapByPaymentMethod(item)),
   };
 }
 

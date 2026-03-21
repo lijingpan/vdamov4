@@ -70,8 +70,8 @@
         <el-table-column v-if="canUpdateRole || canDeleteRole" :label="t('common.actions')" min-width="180" fixed="right">
           <template #default="{ row }">
             <div class="table-actions">
-              <el-button v-if="canUpdateRole" link type="primary" @click="openEditDialog(row)">{{ t('common.edit') }}</el-button>
-              <el-button v-if="canDeleteRole" link type="danger" @click="handleDelete(row)">{{ t('common.delete') }}</el-button>
+              <el-button v-if="canUpdateRole && !isProtectedRole(row)" link type="primary" @click="openEditDialog(row)">{{ t('common.edit') }}</el-button>
+              <el-button v-if="canDeleteRole && !isProtectedRole(row)" link type="danger" @click="handleDelete(row)">{{ t('common.delete') }}</el-button>
             </div>
           </template>
         </el-table-column>
@@ -84,7 +84,14 @@
       width="760px"
       destroy-on-close
     >
-      <el-form ref="formRef" :model="form" :rules="rules" label-position="top" class="dialog-form">
+      <el-form
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        label-position="top"
+        class="dialog-form"
+        v-loading="detailLoading"
+      >
         <el-form-item :label="t('role.form.code')" prop="code">
           <el-input v-model="form.code" maxlength="64" :placeholder="t('role.form.codePlaceholder')" />
         </el-form-item>
@@ -142,7 +149,15 @@ import { ElMessage, ElMessageBox, type FormInstance, type FormRules, type TreeIn
 import { Plus, RefreshRight } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
 import { fetchMenus, type MenuSummary } from '@/api/menus';
-import { createRole, deleteRole, fetchRoles, updateRole, type RolePayload, type RoleSummary } from '@/api/roles';
+import {
+  createRole,
+  deleteRole,
+  fetchRoleDetail,
+  fetchRoles,
+  updateRole,
+  type RolePayload,
+  type RoleSummary,
+} from '@/api/roles';
 import PageShell from '@/components/PageShell.vue';
 import { useAuthStore } from '@/stores/auth';
 
@@ -166,6 +181,7 @@ const authStore = useAuthStore();
 
 const loading = ref(false);
 const submitting = ref(false);
+const detailLoading = ref(false);
 const errorMessage = ref('');
 const rows = ref<RoleSummary[]>([]);
 const menuOptions = ref<MenuSummary[]>([]);
@@ -210,14 +226,8 @@ function resetForm() {
   formRef.value?.clearValidate();
 }
 
-function inferMenuIds(role: RoleSummary): number[] {
-  if (role.menuIds.length > 0) {
-    return [...role.menuIds];
-  }
-  const permissionSet = new Set(role.permissionCodes);
-  return menuOptions.value
-    .filter((item) => permissionSet.has(item.permissionCode))
-    .map((item) => item.id);
+function isProtectedRole(role: RoleSummary): boolean {
+  return role.code === 'SUPER_ADMIN';
 }
 
 function buildMenuTree(items: MenuSummary[]): MenuTreeNode[] {
@@ -289,16 +299,25 @@ function openCreateDialog() {
   });
 }
 
-function openEditDialog(row: RoleSummary) {
+async function openEditDialog(row: RoleSummary) {
   dialogMode.value = 'edit';
-  form.id = row.id;
-  form.code = row.code;
-  form.name = row.name;
-  form.menuIds = inferMenuIds(row);
-  dialogVisible.value = true;
-  nextTick(() => {
-    menuTreeRef.value?.setCheckedKeys(form.menuIds);
-  });
+  resetForm();
+  detailLoading.value = true;
+  try {
+    const detail = await fetchRoleDetail(row.id);
+    form.id = detail.id;
+    form.code = detail.code;
+    form.name = detail.name;
+    form.menuIds = [...new Set(detail.menuIds)];
+    dialogVisible.value = true;
+    nextTick(() => {
+      menuTreeRef.value?.setCheckedKeys(form.menuIds);
+    });
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : t('common.requestFailed'));
+  } finally {
+    detailLoading.value = false;
+  }
 }
 
 async function loadRoles() {
