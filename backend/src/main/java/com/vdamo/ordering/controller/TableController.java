@@ -9,6 +9,7 @@ import com.vdamo.ordering.service.PermissionService;
 import com.vdamo.ordering.service.TableService;
 import jakarta.validation.Valid;
 import java.util.List;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -69,5 +70,12 @@ public class TableController {
     ) {
         permissionService.assertPermission("table:status");
         return ApiResponse.success(messageHelper.get("success.fetch"), tableService.updateStatus(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(@PathVariable Long id) {
+        permissionService.assertPermission("table:delete");
+        tableService.delete(id);
+        return ApiResponse.success(messageHelper.get("success.fetch"), null);
     }
 }

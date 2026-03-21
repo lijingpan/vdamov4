@@ -80,3 +80,9 @@ export async function updateMember(id: number, payload: MemberPayload): Promise<
   });
   return toMemberSummary(raw);
 }
+
+export async function deleteMember(id: number): Promise<void> {
+  await request<void>(`/api/v1/members/${id}`, {
+    method: 'DELETE',
+  });
+}

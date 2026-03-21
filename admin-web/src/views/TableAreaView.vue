@@ -79,7 +79,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="tableCount" :label="t('tableArea.columns.tableCount')" min-width="120" />
-        <el-table-column v-if="canOperateTableArea" :label="t('common.actions')" min-width="180" fixed="right">
+        <el-table-column v-if="canOperateTableArea" :label="t('common.actions')" min-width="250" fixed="right">
           <template #default="{ row }">
             <div class="table-actions">
               <el-button v-if="canUpdateTableArea" link type="primary" @click="openEditDialog(row)">{{ t('common.edit') }}</el-button>
@@ -99,6 +99,7 @@
               >
                 {{ t('tableArea.actions.disable') }}
               </el-button>
+              <el-button v-if="canDeleteTableArea" link type="danger" @click="handleDelete(row)">{{ t('common.delete') }}</el-button>
             </div>
           </template>
         </el-table-column>
@@ -147,6 +148,7 @@ import { useI18n } from 'vue-i18n';
 import { fetchStores, type StoreSummary } from '@/api/stores';
 import {
   createTableArea,
+  deleteTableArea,
   fetchTableAreas,
   updateTableArea,
   updateTableAreaEnabled,
@@ -198,7 +200,8 @@ const totalTableCount = computed(() => rows.value.reduce((sum, item) => sum + it
 const canCreateTableArea = computed(() => authStore.hasPermission('table.area:create'));
 const canUpdateTableArea = computed(() => authStore.hasPermission('table.area:update'));
 const canEnableTableArea = computed(() => authStore.hasPermission('table.area:enable'));
-const canOperateTableArea = computed(() => canUpdateTableArea.value || canEnableTableArea.value);
+const canDeleteTableArea = computed(() => authStore.hasPermission('table.area:delete'));
+const canOperateTableArea = computed(() => canUpdateTableArea.value || canEnableTableArea.value || canDeleteTableArea.value);
 
 const rules: FormRules<AreaFormModel> = {
   storeId: [{ required: true, message: t('tableArea.form.storePlaceholder'), trigger: 'change' }],
@@ -313,12 +316,37 @@ async function toggleEnabled(row: TableAreaSummary, enabled: boolean) {
   }
   try {
     await ElMessageBox.confirm(
-      `${row.areaName} · ${enabled ? t('common.enable') : t('common.disable')}`,
+      `${row.areaName} - ${enabled ? t('common.enable') : t('common.disable')}`,
       t('common.actions'),
       { type: 'warning' },
     );
     await updateTableAreaEnabled(row.id, enabled);
     ElMessage.success(t('common.save'));
+    await loadRows();
+  } catch (error) {
+    if (error === 'cancel' || error === 'close') {
+      return;
+    }
+    ElMessage.error(error instanceof Error ? error.message : t('common.requestFailed'));
+  }
+}
+
+async function handleDelete(row: TableAreaSummary) {
+  if (!canDeleteTableArea.value) {
+    return;
+  }
+  try {
+    await ElMessageBox.confirm(
+      t('tableArea.delete.confirm', { name: row.areaName }),
+      t('tableArea.delete.title'),
+      {
+        type: 'warning',
+        confirmButtonText: t('common.yes'),
+        cancelButtonText: t('common.cancel'),
+      },
+    );
+    await deleteTableArea(row.id);
+    ElMessage.success(t('tableArea.delete.success'));
     await loadRows();
   } catch (error) {
     if (error === 'cancel' || error === 'close') {

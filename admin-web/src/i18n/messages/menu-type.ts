@@ -3,6 +3,55 @@ export const menuTypeMessages = {
     common: {
       delete: '\u5220\u9664',
     },
+    store: {
+      delete: {
+        title: '\u5220\u9664\u95e8\u5e97',
+        confirm: '\u786e\u8ba4\u5220\u9664\u95e8\u5e97\u201c{name}\u201d\u5417\uff1f',
+        success: '\u95e8\u5e97\u5220\u9664\u6210\u529f',
+      },
+    },
+    product: {
+      delete: {
+        title: '\u5220\u9664\u5546\u54c1',
+        confirm: '\u786e\u8ba4\u5220\u9664\u5546\u54c1\u201c{name}\u201d\u5417\uff1f',
+        success: '\u5546\u54c1\u5220\u9664\u6210\u529f',
+      },
+    },
+    productCategory: {
+      delete: {
+        title: '\u5220\u9664\u5546\u54c1\u5206\u7c7b',
+        confirm: '\u786e\u8ba4\u5220\u9664\u5206\u7c7b\u201c{name}\u201d\u5417\uff1f',
+        success: '\u5546\u54c1\u5206\u7c7b\u5220\u9664\u6210\u529f',
+      },
+    },
+    member: {
+      delete: {
+        title: '\u5220\u9664\u4f1a\u5458',
+        confirm: '\u786e\u8ba4\u5220\u9664\u4f1a\u5458\u201c{name}\u201d\u5417\uff1f',
+        success: '\u4f1a\u5458\u5220\u9664\u6210\u529f',
+      },
+    },
+    device: {
+      delete: {
+        title: '\u5220\u9664\u8bbe\u5907',
+        confirm: '\u786e\u8ba4\u5220\u9664\u8bbe\u5907\u201c{name}\u201d\u5417\uff1f',
+        success: '\u8bbe\u5907\u5220\u9664\u6210\u529f',
+      },
+    },
+    tableArea: {
+      delete: {
+        title: '\u5220\u9664\u533a\u57df',
+        confirm: '\u786e\u8ba4\u5220\u9664\u533a\u57df\u201c{name}\u201d\u5417\uff1f',
+        success: '\u533a\u57df\u5220\u9664\u6210\u529f',
+      },
+    },
+    table: {
+      delete: {
+        title: '\u5220\u9664\u684c\u53f0',
+        confirm: '\u786e\u8ba4\u5220\u9664\u684c\u53f0\u201c{name}\u201d\u5417\uff1f',
+        success: '\u684c\u53f0\u5220\u9664\u6210\u529f',
+      },
+    },
     role: {
       delete: {
         title: '\u5220\u9664\u89d2\u8272',
@@ -40,6 +89,55 @@ export const menuTypeMessages = {
     common: {
       delete: 'Delete',
     },
+    store: {
+      delete: {
+        title: 'Delete Store',
+        confirm: 'Are you sure you want to delete store "{name}"?',
+        success: 'Store deleted successfully',
+      },
+    },
+    product: {
+      delete: {
+        title: 'Delete Product',
+        confirm: 'Are you sure you want to delete product "{name}"?',
+        success: 'Product deleted successfully',
+      },
+    },
+    productCategory: {
+      delete: {
+        title: 'Delete Category',
+        confirm: 'Are you sure you want to delete category "{name}"?',
+        success: 'Category deleted successfully',
+      },
+    },
+    member: {
+      delete: {
+        title: 'Delete Member',
+        confirm: 'Are you sure you want to delete member "{name}"?',
+        success: 'Member deleted successfully',
+      },
+    },
+    device: {
+      delete: {
+        title: 'Delete Device',
+        confirm: 'Are you sure you want to delete device "{name}"?',
+        success: 'Device deleted successfully',
+      },
+    },
+    tableArea: {
+      delete: {
+        title: 'Delete Area',
+        confirm: 'Are you sure you want to delete area "{name}"?',
+        success: 'Area deleted successfully',
+      },
+    },
+    table: {
+      delete: {
+        title: 'Delete Table',
+        confirm: 'Are you sure you want to delete table "{name}"?',
+        success: 'Table deleted successfully',
+      },
+    },
     role: {
       delete: {
         title: 'Delete Role',
@@ -76,6 +174,55 @@ export const menuTypeMessages = {
   'th-TH': {
     common: {
       delete: '\u0e25\u0e1a',
+    },
+    store: {
+      delete: {
+        title: '\u0e25\u0e1a\u0e2a\u0e32\u0e02\u0e32',
+        confirm: '\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e01\u0e32\u0e23\u0e25\u0e1a\u0e2a\u0e32\u0e02\u0e32 "{name}" \u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48?',
+        success: '\u0e25\u0e1a\u0e2a\u0e32\u0e02\u0e32\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08',
+      },
+    },
+    product: {
+      delete: {
+        title: '\u0e25\u0e1a\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32',
+        confirm: '\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e01\u0e32\u0e23\u0e25\u0e1a\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32 "{name}" \u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48?',
+        success: '\u0e25\u0e1a\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08',
+      },
+    },
+    productCategory: {
+      delete: {
+        title: '\u0e25\u0e1a\u0e2b\u0e21\u0e27\u0e14\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32',
+        confirm: '\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e01\u0e32\u0e23\u0e25\u0e1a\u0e2b\u0e21\u0e27\u0e14 "{name}" \u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48?',
+        success: '\u0e25\u0e1a\u0e2b\u0e21\u0e27\u0e14\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08',
+      },
+    },
+    member: {
+      delete: {
+        title: '\u0e25\u0e1a\u0e2a\u0e21\u0e32\u0e0a\u0e34\u0e01',
+        confirm: '\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e01\u0e32\u0e23\u0e25\u0e1a\u0e2a\u0e21\u0e32\u0e0a\u0e34\u0e01 "{name}" \u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48?',
+        success: '\u0e25\u0e1a\u0e2a\u0e21\u0e32\u0e0a\u0e34\u0e01\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08',
+      },
+    },
+    device: {
+      delete: {
+        title: '\u0e25\u0e1a\u0e2d\u0e38\u0e1b\u0e01\u0e23\u0e13\u0e4c',
+        confirm: '\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e01\u0e32\u0e23\u0e25\u0e1a\u0e2d\u0e38\u0e1b\u0e01\u0e23\u0e13\u0e4c "{name}" \u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48?',
+        success: '\u0e25\u0e1a\u0e2d\u0e38\u0e1b\u0e01\u0e23\u0e13\u0e4c\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08',
+      },
+    },
+    tableArea: {
+      delete: {
+        title: '\u0e25\u0e1a\u0e42\u0e0b\u0e19',
+        confirm: '\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e01\u0e32\u0e23\u0e25\u0e1a\u0e42\u0e0b\u0e19 "{name}" \u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48?',
+        success: '\u0e25\u0e1a\u0e42\u0e0b\u0e19\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08',
+      },
+    },
+    table: {
+      delete: {
+        title: '\u0e25\u0e1a\u0e42\u0e15\u0e4a\u0e30',
+        confirm: '\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e01\u0e32\u0e23\u0e25\u0e1a\u0e42\u0e15\u0e4a\u0e30 "{name}" \u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48?',
+        success: '\u0e25\u0e1a\u0e42\u0e15\u0e4a\u0e30\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08',
+      },
     },
     role: {
       delete: {

@@ -9,6 +9,7 @@ import com.vdamo.ordering.service.PermissionService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -70,5 +71,12 @@ public class MemberController {
     public ApiResponse<MemberSummary> findByPhone(@RequestParam @NotBlank(message = "{error.phone.required}") String phoneE164) {
         permissionService.assertPermission("member:view");
         return ApiResponse.success(messageHelper.get("success.fetch"), memberService.findByPhone(phoneE164));
+    }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(@PathVariable Long id) {
+        permissionService.assertPermission("member:delete");
+        memberService.delete(id);
+        return ApiResponse.success(messageHelper.get("success.fetch"), null);
     }
 }

@@ -4,6 +4,7 @@ import { managementMessages } from './messages/management';
 import { masterDataMessages } from './messages/master-data';
 import { menuTypeMessages } from './messages/menu-type';
 import { orderDetailMessages } from './messages/order-detail';
+import { productConfigMessages } from './messages/product-config';
 import { salesReportMessages } from './messages/sales-report';
 import { storeLocationMessages } from './messages/store-location';
 import thTH from './messages/th-TH';
@@ -51,8 +52,11 @@ const messages = {
       storeLocationMessages['zh-CN'] as LocaleMessageObject,
     ),
     mergeLocaleMessages(
-      salesReportMessages['zh-CN'] as LocaleMessageObject,
-      menuTypeMessages['zh-CN'] as LocaleMessageObject,
+      mergeLocaleMessages(
+        salesReportMessages['zh-CN'] as LocaleMessageObject,
+        menuTypeMessages['zh-CN'] as LocaleMessageObject,
+      ),
+      productConfigMessages['zh-CN'] as LocaleMessageObject,
     ),
   ),
   'en-US': mergeLocaleMessages(
@@ -67,8 +71,11 @@ const messages = {
       storeLocationMessages['en-US'] as LocaleMessageObject,
     ),
     mergeLocaleMessages(
-      salesReportMessages['en-US'] as LocaleMessageObject,
-      menuTypeMessages['en-US'] as LocaleMessageObject,
+      mergeLocaleMessages(
+        salesReportMessages['en-US'] as LocaleMessageObject,
+        menuTypeMessages['en-US'] as LocaleMessageObject,
+      ),
+      productConfigMessages['en-US'] as LocaleMessageObject,
     ),
   ),
   'th-TH': mergeLocaleMessages(
@@ -83,8 +90,11 @@ const messages = {
       storeLocationMessages['th-TH'] as LocaleMessageObject,
     ),
     mergeLocaleMessages(
-      salesReportMessages['th-TH'] as LocaleMessageObject,
-      menuTypeMessages['th-TH'] as LocaleMessageObject,
+      mergeLocaleMessages(
+        salesReportMessages['th-TH'] as LocaleMessageObject,
+        menuTypeMessages['th-TH'] as LocaleMessageObject,
+      ),
+      productConfigMessages['th-TH'] as LocaleMessageObject,
     ),
   ),
 } as Record<string, any>;

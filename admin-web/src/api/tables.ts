@@ -95,3 +95,9 @@ export async function updateTableStatus(id: number, status: string): Promise<Tab
   });
   return toTableSummary(raw);
 }
+
+export async function deleteTable(id: number): Promise<void> {
+  await request<void>(`/api/v1/tables/${id}`, {
+    method: 'DELETE',
+  });
+}

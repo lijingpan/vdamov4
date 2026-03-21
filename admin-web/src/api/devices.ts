@@ -111,3 +111,9 @@ export async function updateDeviceEnabled(id: number, enabled: boolean): Promise
   });
   return toDeviceSummary(raw);
 }
+
+export async function deleteDevice(id: number): Promise<void> {
+  await request<void>(`/api/v1/devices/${id}`, {
+    method: 'DELETE',
+  });
+}

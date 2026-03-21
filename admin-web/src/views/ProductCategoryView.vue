@@ -82,7 +82,7 @@
         <el-table-column
           v-if="canOperateProductCategory"
           :label="t('common.actions')"
-          min-width="190"
+          min-width="250"
           fixed="right"
         >
           <template #default="{ row }">
@@ -105,6 +105,9 @@
                 @click="toggleEnabled(row, false)"
               >
                 {{ t('productCategory.actions.disable') }}
+              </el-button>
+              <el-button v-if="canDeleteProductCategory" link type="danger" @click="handleDelete(row)">
+                {{ t('common.delete') }}
               </el-button>
             </div>
           </template>
@@ -153,6 +156,7 @@ import { Plus, RefreshRight } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
 import {
   createProductCategory,
+  deleteProductCategory,
   fetchProductCategories,
   updateProductCategory,
   updateProductCategoryEnabled,
@@ -203,7 +207,8 @@ const form = reactive<CategoryFormModel>({
 const canCreateProductCategory = computed(() => authStore.hasPermission('product.category:create'));
 const canUpdateProductCategory = computed(() => authStore.hasPermission('product.category:update'));
 const canEnableProductCategory = computed(() => authStore.hasPermission('product.category:enable'));
-const canOperateProductCategory = computed(() => canUpdateProductCategory.value || canEnableProductCategory.value);
+const canDeleteProductCategory = computed(() => authStore.hasPermission('product.category:delete'));
+const canOperateProductCategory = computed(() => canUpdateProductCategory.value || canEnableProductCategory.value || canDeleteProductCategory.value);
 const enabledCount = computed(() => rows.value.filter((item) => item.enabled).length);
 const totalProductCount = computed(() => rows.value.reduce((sum, item) => sum + item.productCount, 0));
 const storeNameMap = computed(() =>
@@ -344,6 +349,31 @@ async function toggleEnabled(row: ProductCategorySummary, enabled: boolean) {
     );
     await updateProductCategoryEnabled(row.id, enabled);
     ElMessage.success(t('common.save'));
+    await loadRows();
+  } catch (error) {
+    if (error === 'cancel' || error === 'close') {
+      return;
+    }
+    ElMessage.error(error instanceof Error ? error.message : t('common.requestFailed'));
+  }
+}
+
+async function handleDelete(row: ProductCategorySummary) {
+  if (!canDeleteProductCategory.value) {
+    return;
+  }
+  try {
+    await ElMessageBox.confirm(
+      t('productCategory.delete.confirm', { name: row.categoryName }),
+      t('productCategory.delete.title'),
+      {
+        type: 'warning',
+        confirmButtonText: t('common.yes'),
+        cancelButtonText: t('common.cancel'),
+      },
+    );
+    await deleteProductCategory(row.id);
+    ElMessage.success(t('productCategory.delete.success'));
     await loadRows();
   } catch (error) {
     if (error === 'cancel' || error === 'close') {

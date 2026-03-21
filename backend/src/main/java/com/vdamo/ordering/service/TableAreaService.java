@@ -140,6 +140,19 @@ public class TableAreaService {
         return getSummary(id);
     }
 
+    public void delete(Long id) {
+        TableAreaEntity entity = requireArea(id);
+        permissionService.assertStoreAccess(entity.getStoreId());
+        Long tableCount = tableMapper.selectCount(
+                new LambdaQueryWrapper<TableEntity>()
+                        .eq(TableEntity::getStoreId, entity.getStoreId())
+                        .eq(TableEntity::getAreaName, entity.getAreaName()));
+        if (tableCount != null && tableCount > 0) {
+            throw new BadRequestException("Table area has tables and cannot be deleted");
+        }
+        tableAreaMapper.deleteById(entity.getId());
+    }
+
     private int defaultInt(Integer value) {
         return value == null ? 0 : value;
     }

@@ -77,10 +77,11 @@
         <el-table-column prop="countryCode" :label="t('member.columns.countryCode')" min-width="120" />
         <el-table-column prop="phoneNational" :label="t('member.columns.phoneNational')" min-width="150" />
         <el-table-column prop="phoneE164" :label="t('member.columns.phoneE164')" min-width="180" />
-        <el-table-column v-if="canUpdateMember" :label="t('common.actions')" min-width="120" fixed="right">
+        <el-table-column v-if="canUpdateMember || canDeleteMember" :label="t('common.actions')" min-width="180" fixed="right">
           <template #default="{ row }">
             <div class="table-actions">
-              <el-button link type="primary" @click="openEditDialog(row)">{{ t('common.edit') }}</el-button>
+              <el-button v-if="canUpdateMember" link type="primary" @click="openEditDialog(row)">{{ t('common.edit') }}</el-button>
+              <el-button v-if="canDeleteMember" link type="danger" @click="handleDelete(row)">{{ t('common.delete') }}</el-button>
             </div>
           </template>
         </el-table-column>
@@ -126,11 +127,12 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
 import { Plus, RefreshRight } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
 import {
   createMember,
+  deleteMember,
   fetchMembers,
   updateMember,
   type MemberPayload,
@@ -184,6 +186,7 @@ const form = reactive<MemberFormModel>({
 
 const canCreateMember = computed(() => authStore.hasPermission('member:create'));
 const canUpdateMember = computed(() => authStore.hasPermission('member:update'));
+const canDeleteMember = computed(() => authStore.hasPermission('member:delete'));
 const storeNameMap = computed(() =>
   storeOptions.value.reduce<Record<number, string>>((result, item) => {
     result[item.id] = item.name;
@@ -334,6 +337,31 @@ async function submitForm() {
     ElMessage.error(error instanceof Error ? error.message : t('common.requestFailed'));
   } finally {
     submitting.value = false;
+  }
+}
+
+async function handleDelete(row: MemberSummary) {
+  if (!canDeleteMember.value) {
+    return;
+  }
+  try {
+    await ElMessageBox.confirm(
+      t('member.delete.confirm', { name: row.displayName }),
+      t('member.delete.title'),
+      {
+        type: 'warning',
+        confirmButtonText: t('common.yes'),
+        cancelButtonText: t('common.cancel'),
+      },
+    );
+    await deleteMember(row.id);
+    ElMessage.success(t('member.delete.success'));
+    await loadMembers();
+  } catch (error) {
+    if (error === 'cancel' || error === 'close') {
+      return;
+    }
+    ElMessage.error(error instanceof Error ? error.message : t('common.requestFailed'));
   }
 }
 

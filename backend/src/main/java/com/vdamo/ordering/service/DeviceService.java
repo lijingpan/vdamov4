@@ -107,6 +107,12 @@ public class DeviceService {
         return getSummary(id);
     }
 
+    public void delete(Long id) {
+        StoreDeviceEntity entity = requireDevice(id);
+        permissionService.assertStoreAccess(entity.getStoreId());
+        storeDeviceMapper.deleteById(entity.getId());
+    }
+
     private void applyDeviceValues(StoreDeviceEntity entity, DeviceUpsertRequest request) {
         String name = request.name().trim();
         String type = request.type().trim().toUpperCase(Locale.ROOT);

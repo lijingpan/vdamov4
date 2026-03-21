@@ -11,9 +11,41 @@ INSERT INTO da_member (id, store_id, level_code, display_name, country_code, pho
 (362223, 54, 'VIP1', 'N', '+66', '893699324', '+66893699324'),
 (362220, 2, 'NORMAL', 'Patcharee', '+86', '13800138000', '+8613800138000');
 
-INSERT INTO da_product (id, store_id, name, code, category_code, price_in_cent, active) VALUES
-(1169, 2, 'Signature Milk Tea', 'signature-milk-tea', 'DRINK', 1990, TRUE),
-(1165, 54, 'Buffet 388', 'buffet-388', 'SET_MEAL', 35000, TRUE);
+INSERT INTO da_product (
+    id, store_id, name, code, category_code, product_type, spec_mode, price_in_cent,
+    description, attr_enabled, material_enabled, weighed_enabled, active
+) VALUES
+(1169, 2, 'Signature Milk Tea', 'signature-milk-tea', 'DRINK', 'NORMAL', 'MULTI', 1990, 'Best-selling milk tea', TRUE, FALSE, FALSE, TRUE),
+(1165, 54, 'Buffet 388', 'buffet-388', 'SET_MEAL', 'SET_MEAL', 'SINGLE', 35000, 'Store buffet package', FALSE, FALSE, FALSE, TRUE);
+
+INSERT INTO da_product_spec (id, product_id, store_id, name, sort_order) VALUES
+(11701, 1169, 2, 'Size', 1),
+(11702, 1169, 2, 'Ice', 2);
+
+INSERT INTO da_product_spec_value (id, product_spec_id, product_id, store_id, name, sort_order) VALUES
+(11711, 11701, 1169, 2, 'Small', 1),
+(11712, 11701, 1169, 2, 'Large', 2),
+(11721, 11702, 1169, 2, 'Normal', 1),
+(11722, 11702, 1169, 2, 'Less Ice', 2);
+
+INSERT INTO da_product_attr (id, product_id, store_id, name, sort_order) VALUES
+(11801, 1169, 2, 'Sugar Level', 1);
+
+INSERT INTO da_product_attr_value (id, product_attr_id, product_id, store_id, name, is_default, sort_order) VALUES
+(11811, 11801, 1169, 2, 'Regular', TRUE, 1),
+(11812, 11801, 1169, 2, 'Half Sugar', FALSE, 2),
+(11813, 11801, 1169, 2, 'No Sugar', FALSE, 3);
+
+INSERT INTO da_product_sku (
+    id, product_id, store_id, sku_code, barcode, spec_key, spec_name, price_in_cent,
+    line_price_in_cent, cost_price_in_cent, box_fee_in_cent, stock_qty, auto_replenish,
+    weight_unit_gram, sort_order, active
+) VALUES
+(11901, 1169, 2, 'signature-milk-tea-s-normal', '690000000001', 'size:Small|ice:Normal', 'Small / Normal', 1990, 2290, 980, 0, 99, TRUE, NULL, 1, TRUE),
+(11902, 1169, 2, 'signature-milk-tea-s-less-ice', '690000000002', 'size:Small|ice:Less Ice', 'Small / Less Ice', 1990, 2290, 980, 0, 99, TRUE, NULL, 2, TRUE),
+(11903, 1169, 2, 'signature-milk-tea-l-normal', '690000000003', 'size:Large|ice:Normal', 'Large / Normal', 2490, 2790, 1180, 0, 99, TRUE, NULL, 3, TRUE),
+(11904, 1169, 2, 'signature-milk-tea-l-less-ice', '690000000004', 'size:Large|ice:Less Ice', 'Large / Less Ice', 2490, 2790, 1180, 0, 99, TRUE, NULL, 4, TRUE),
+(11905, 1165, 54, 'buffet-388-default', '880000000001', 'DEFAULT', 'Default', 35000, 38800, 18000, 0, 999, FALSE, NULL, 1, TRUE);
 
 INSERT INTO da_product_category (id, store_id, category_name, category_code, sort_order, enabled) VALUES
 (1301, 2, 'Drinks', 'DRINK', 10, TRUE),
@@ -106,27 +138,34 @@ INSERT INTO da_menu (id, parent_id, name, menu_type, route, permission_code, sor
 (1401, 2, 'Store Create', 'BUTTON', '', 'store:create', 21),
 (1402, 2, 'Store Update', 'BUTTON', '', 'store:update', 22),
 (1403, 2, 'Store Status', 'BUTTON', '', 'store:status', 23),
+(1404, 2, 'Store Delete', 'BUTTON', '', 'store:delete', 24),
 (1501, 4, 'Table Area Create', 'BUTTON', '', 'table.area:create', 41),
 (1502, 4, 'Table Area Update', 'BUTTON', '', 'table.area:update', 42),
 (1503, 4, 'Table Area Enable', 'BUTTON', '', 'table.area:enable', 43),
+(1504, 4, 'Table Area Delete', 'BUTTON', '', 'table.area:delete', 44),
 (1601, 3, 'Table Create', 'BUTTON', '', 'table:create', 31),
 (1602, 3, 'Table Update', 'BUTTON', '', 'table:update', 32),
 (1603, 3, 'Table Status', 'BUTTON', '', 'table:status', 33),
+(1604, 3, 'Table Delete', 'BUTTON', '', 'table:delete', 34),
 (1701, 8, 'Product Create', 'BUTTON', '', 'product:create', 81),
 (1702, 8, 'Product Update', 'BUTTON', '', 'product:update', 82),
 (1703, 8, 'Product Status', 'BUTTON', '', 'product:status', 83),
+(1704, 8, 'Product Delete', 'BUTTON', '', 'product:delete', 84),
 (1801, 9, 'Product Category Create', 'BUTTON', '', 'product.category:create', 91),
 (1802, 9, 'Product Category Update', 'BUTTON', '', 'product.category:update', 92),
 (1803, 9, 'Product Category Enable', 'BUTTON', '', 'product.category:enable', 93),
+(1804, 9, 'Product Category Delete', 'BUTTON', '', 'product.category:delete', 94),
 (1901, 7, 'Device Create', 'BUTTON', '', 'device:create', 71),
 (1902, 7, 'Device Update', 'BUTTON', '', 'device:update', 72),
 (1903, 7, 'Device Enable', 'BUTTON', '', 'device:enable', 73),
+(1904, 7, 'Device Delete', 'BUTTON', '', 'device:delete', 74),
 (1951, 5, 'Order Update Status', 'BUTTON', '', 'order:update-status', 51),
 (1952, 5, 'Order Update Payment', 'BUTTON', '', 'order:update-payment', 52),
 (1953, 5, 'Order Complete', 'BUTTON', '', 'order:complete', 53),
 (2101, 6, 'Sales Report Export', 'BUTTON', '', 'sales.report:export', 61),
 (2001, 10, 'Member Create', 'BUTTON', '', 'member:create', 101),
-(2002, 10, 'Member Update', 'BUTTON', '', 'member:update', 102);
+(2002, 10, 'Member Update', 'BUTTON', '', 'member:update', 102),
+(2003, 10, 'Member Delete', 'BUTTON', '', 'member:delete', 103);
 
 INSERT INTO da_user_role (id, user_id, role_id) VALUES
 (1, 1, 1),
@@ -136,26 +175,26 @@ INSERT INTO da_role_menu (id, role_id, menu_id) VALUES
 (1, 1, 1), (2, 1, 2), (3, 1, 3), (4, 1, 4), (5, 1, 5), (6, 1, 6), (7, 1, 7),
 (8, 1, 8), (9, 1, 9), (10, 1, 10), (11, 1, 11), (12, 1, 12), (13, 1, 13),
 (24, 1, 1101), (25, 1, 1102), (26, 1, 1103), (27, 1, 1201), (28, 1, 1202), (29, 1, 1203), (30, 1, 1301), (31, 1, 1302), (32, 1, 1303),
-(33, 1, 1401), (34, 1, 1402), (35, 1, 1403),
-(36, 1, 1501), (37, 1, 1502), (38, 1, 1503),
-(39, 1, 1601), (40, 1, 1602), (41, 1, 1603),
-(50, 1, 1701), (51, 1, 1702), (52, 1, 1703),
-(53, 1, 1801), (54, 1, 1802), (55, 1, 1803),
-(62, 1, 1901), (63, 1, 1902), (64, 1, 1903),
+(33, 1, 1401), (34, 1, 1402), (35, 1, 1403), (80, 1, 1404),
+(36, 1, 1501), (37, 1, 1502), (38, 1, 1503), (81, 1, 1504),
+(39, 1, 1601), (40, 1, 1602), (41, 1, 1603), (82, 1, 1604),
+(50, 1, 1701), (51, 1, 1702), (52, 1, 1703), (83, 1, 1704),
+(53, 1, 1801), (54, 1, 1802), (55, 1, 1803), (84, 1, 1804),
+(62, 1, 1901), (63, 1, 1902), (64, 1, 1903), (85, 1, 1904),
 (72, 1, 1951), (73, 1, 1952), (74, 1, 1953),
 (78, 1, 2101),
-(65, 1, 2001), (66, 1, 2002),
+(65, 1, 2001), (66, 1, 2002), (86, 1, 2003),
 (14, 2, 1), (15, 2, 2), (16, 2, 3), (17, 2, 4), (18, 2, 5), (19, 2, 6),
 (20, 2, 7), (21, 2, 8), (22, 2, 9), (23, 2, 10),
 (42, 2, 1402), (43, 2, 1403),
-(44, 2, 1501), (45, 2, 1502), (46, 2, 1503),
-(47, 2, 1601), (48, 2, 1602), (49, 2, 1603),
-(56, 2, 1701), (57, 2, 1702), (58, 2, 1703),
-(59, 2, 1801), (60, 2, 1802), (61, 2, 1803),
-(67, 2, 1901), (68, 2, 1902), (69, 2, 1903),
+(44, 2, 1501), (45, 2, 1502), (46, 2, 1503), (87, 2, 1504),
+(47, 2, 1601), (48, 2, 1602), (49, 2, 1603), (88, 2, 1604),
+(56, 2, 1701), (57, 2, 1702), (58, 2, 1703), (89, 2, 1704),
+(59, 2, 1801), (60, 2, 1802), (61, 2, 1803), (90, 2, 1804),
+(67, 2, 1901), (68, 2, 1902), (69, 2, 1903), (91, 2, 1904),
 (75, 2, 1951), (76, 2, 1952), (77, 2, 1953),
 (79, 2, 2101),
-(70, 2, 2001), (71, 2, 2002);
+(70, 2, 2001), (71, 2, 2002), (92, 2, 2003);
 
 INSERT INTO da_user_store (id, user_id, store_id) VALUES
 (1, 1, 2), (2, 1, 54), (3, 2, 54);

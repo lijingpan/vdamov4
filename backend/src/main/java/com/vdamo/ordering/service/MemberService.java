@@ -5,8 +5,10 @@ import com.vdamo.ordering.common.exception.BadRequestException;
 import com.vdamo.ordering.common.exception.NotFoundException;
 import com.vdamo.ordering.common.support.IdGenerator;
 import com.vdamo.ordering.entity.MemberEntity;
+import com.vdamo.ordering.entity.OrderEntity;
 import com.vdamo.ordering.entity.StoreEntity;
 import com.vdamo.ordering.mapper.MemberMapper;
+import com.vdamo.ordering.mapper.OrderMapper;
 import com.vdamo.ordering.mapper.StoreMapper;
 import com.vdamo.ordering.model.MemberSummary;
 import com.vdamo.ordering.model.MemberUpsertRequest;
@@ -21,17 +23,20 @@ import org.springframework.util.StringUtils;
 public class MemberService {
 
     private final MemberMapper memberMapper;
+    private final OrderMapper orderMapper;
     private final StoreMapper storeMapper;
     private final PermissionService permissionService;
     private final IdGenerator idGenerator;
 
     public MemberService(
             MemberMapper memberMapper,
+            OrderMapper orderMapper,
             StoreMapper storeMapper,
             PermissionService permissionService,
             IdGenerator idGenerator
     ) {
         this.memberMapper = memberMapper;
+        this.orderMapper = orderMapper;
         this.storeMapper = storeMapper;
         this.permissionService = permissionService;
         this.idGenerator = idGenerator;
@@ -107,6 +112,19 @@ public class MemberService {
 
         Map<Long, String> storeNameMap = loadStoreNameMap(storeScope);
         return toSummary(entity, storeNameMap);
+    }
+
+    public void delete(Long id) {
+        MemberEntity entity = requireMember(id);
+        permissionService.assertStoreAccess(entity.getStoreId());
+
+        Long orderCount = orderMapper.selectCount(
+                new LambdaQueryWrapper<OrderEntity>().eq(OrderEntity::getMemberId, id));
+        if (orderCount != null && orderCount > 0) {
+            throw new BadRequestException("Member is referenced by orders and cannot be deleted");
+        }
+
+        memberMapper.deleteById(entity.getId());
     }
 
     private void applyMemberValues(MemberEntity entity, MemberUpsertRequest request) {

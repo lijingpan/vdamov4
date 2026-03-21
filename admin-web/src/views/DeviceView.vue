@@ -105,7 +105,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column v-if="canOperateDevice" :label="t('common.actions')" min-width="200" fixed="right">
+        <el-table-column v-if="canOperateDevice" :label="t('common.actions')" min-width="260" fixed="right">
           <template #default="{ row }">
             <div class="table-actions">
               <el-button v-if="canUpdateDevice" link type="primary" @click="openEditDialog(row)">
@@ -126,6 +126,9 @@
                 @click="changeEnabled(row, false)"
               >
                 {{ t('device.actions.disable') }}
+              </el-button>
+              <el-button v-if="canDeleteDevice" link type="danger" @click="handleDelete(row)">
+                {{ t('common.delete') }}
               </el-button>
             </div>
           </template>
@@ -197,6 +200,7 @@ import { Plus, RefreshRight } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
 import {
   createDevice,
+  deleteDevice,
   fetchDevices,
   updateDevice,
   updateDeviceEnabled,
@@ -261,7 +265,8 @@ const onlineStatusOptions = ['ONLINE', 'OFFLINE'];
 const canCreateDevice = computed(() => authStore.hasPermission('device:create'));
 const canUpdateDevice = computed(() => authStore.hasPermission('device:update'));
 const canEnableDevice = computed(() => authStore.hasPermission('device:enable'));
-const canOperateDevice = computed(() => canUpdateDevice.value || canEnableDevice.value);
+const canDeleteDevice = computed(() => authStore.hasPermission('device:delete'));
+const canOperateDevice = computed(() => canUpdateDevice.value || canEnableDevice.value || canDeleteDevice.value);
 
 const storeNameMap = computed(() =>
   storeOptions.value.reduce<Record<number, string>>((result, item) => {
@@ -421,6 +426,31 @@ async function changeEnabled(row: DeviceSummary, enabled: boolean) {
     );
     await updateDeviceEnabled(row.id, enabled);
     ElMessage.success(t('common.save'));
+    await loadDevices();
+  } catch (error) {
+    if (error === 'cancel' || error === 'close') {
+      return;
+    }
+    ElMessage.error(error instanceof Error ? error.message : t('common.requestFailed'));
+  }
+}
+
+async function handleDelete(row: DeviceSummary) {
+  if (!canDeleteDevice.value) {
+    return;
+  }
+  try {
+    await ElMessageBox.confirm(
+      t('device.delete.confirm', { name: row.name }),
+      t('device.delete.title'),
+      {
+        type: 'warning',
+        confirmButtonText: t('common.yes'),
+        cancelButtonText: t('common.cancel'),
+      },
+    );
+    await deleteDevice(row.id);
+    ElMessage.success(t('device.delete.success'));
     await loadDevices();
   } catch (error) {
     if (error === 'cancel' || error === 'close') {

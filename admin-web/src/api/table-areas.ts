@@ -100,3 +100,9 @@ export async function updateTableAreaEnabled(id: number, enabled: boolean): Prom
   });
   return toTableAreaSummary(raw);
 }
+
+export async function deleteTableArea(id: number): Promise<void> {
+  await request<void>(`/api/v1/table-areas/${id}`, {
+    method: 'DELETE',
+  });
+}

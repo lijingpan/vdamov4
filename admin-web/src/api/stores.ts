@@ -107,3 +107,9 @@ export async function updateStoreStatus(id: number, businessStatus: string): Pro
   });
   return toStoreSummary(raw);
 }
+
+export async function deleteStore(id: number): Promise<void> {
+  await request<void>(`/api/v1/stores/${id}`, {
+    method: 'DELETE',
+  });
+}

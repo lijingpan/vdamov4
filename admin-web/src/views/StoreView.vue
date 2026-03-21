@@ -109,7 +109,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column v-if="canOperateStore" :label="t('common.actions')" min-width="220" fixed="right">
+        <el-table-column v-if="canOperateStore" :label="t('common.actions')" min-width="280" fixed="right">
           <template #default="{ row }">
             <div class="table-actions">
               <el-button v-if="canUpdateStore" link type="primary" @click="openEditDialog(row)">{{ t('common.edit') }}</el-button>
@@ -137,6 +137,7 @@
               >
                 {{ t('store.actions.disable') }}
               </el-button>
+              <el-button v-if="canDeleteStore" link type="danger" @click="handleDelete(row)">{{ t('common.delete') }}</el-button>
             </div>
           </template>
         </el-table-column>
@@ -234,7 +235,7 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
 import { Location, Plus, RefreshRight } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
-import { createStore, fetchStores, updateStore, updateStoreStatus, type StorePayload, type StoreSummary } from '@/api/stores';
+import { createStore, deleteStore, fetchStores, updateStore, updateStoreStatus, type StorePayload, type StoreSummary } from '@/api/stores';
 import GoogleMapPickerDialog from '@/components/GoogleMapPickerDialog.vue';
 import PageShell from '@/components/PageShell.vue';
 import { useAuthStore } from '@/stores/auth';
@@ -286,7 +287,8 @@ const businessTypeOptions = ['DINE_IN', 'TAKEAWAY', 'DELIVERY'];
 const canCreateStore = computed(() => authStore.hasPermission('store:create'));
 const canUpdateStore = computed(() => authStore.hasPermission('store:update'));
 const canUpdateStoreStatus = computed(() => authStore.hasPermission('store:status'));
-const canOperateStore = computed(() => canUpdateStore.value || canUpdateStoreStatus.value);
+const canDeleteStore = computed(() => authStore.hasPermission('store:delete'));
+const canOperateStore = computed(() => canUpdateStore.value || canUpdateStoreStatus.value || canDeleteStore.value);
 const summary = computed(() => ({
   open: rows.value.filter((item) => item.businessStatus === 'OPEN').length,
   rest: rows.value.filter((item) => item.businessStatus === 'REST').length,
@@ -436,7 +438,7 @@ async function changeStatus(row: StoreSummary, nextStatus: string) {
   }
   try {
     await ElMessageBox.confirm(
-      `${row.name} · ${t(`dict.storeStatus.${nextStatus}`)}`,
+      `${row.name} - ${t(`dict.storeStatus.${nextStatus}`)}`,
       t('common.actions'),
       {
         type: 'warning',
@@ -444,6 +446,31 @@ async function changeStatus(row: StoreSummary, nextStatus: string) {
     );
     await updateStoreStatus(row.id, nextStatus);
     ElMessage.success(t('common.save'));
+    await loadStores();
+  } catch (error) {
+    if (error === 'cancel' || error === 'close') {
+      return;
+    }
+    ElMessage.error(error instanceof Error ? error.message : t('common.requestFailed'));
+  }
+}
+
+async function handleDelete(row: StoreSummary) {
+  if (!canDeleteStore.value) {
+    return;
+  }
+  try {
+    await ElMessageBox.confirm(
+      t('store.delete.confirm', { name: row.name }),
+      t('store.delete.title'),
+      {
+        type: 'warning',
+        confirmButtonText: t('common.yes'),
+        cancelButtonText: t('common.cancel'),
+      },
+    );
+    await deleteStore(row.id);
+    ElMessage.success(t('store.delete.success'));
     await loadStores();
   } catch (error) {
     if (error === 'cancel' || error === 'close') {

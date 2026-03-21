@@ -10,6 +10,7 @@ import com.vdamo.ordering.service.PermissionService;
 import com.vdamo.ordering.service.ProductService;
 import jakarta.validation.Valid;
 import java.util.List;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -79,5 +80,12 @@ public class ProductController {
     ) {
         permissionService.assertPermission("product:status");
         return ApiResponse.success(messageHelper.get("success.fetch"), productService.updateStatus(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(@PathVariable Long id) {
+        permissionService.assertPermission("product:delete");
+        productService.delete(id);
+        return ApiResponse.success(messageHelper.get("success.fetch"), null);
     }
 }

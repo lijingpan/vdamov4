@@ -56,8 +56,98 @@ CREATE TABLE da_product (
     name VARCHAR(100) NOT NULL,
     code VARCHAR(64) NOT NULL,
     category_code VARCHAR(32) NOT NULL,
+    product_type VARCHAR(32) NOT NULL,
+    spec_mode VARCHAR(16) NOT NULL,
     price_in_cent INT NOT NULL,
+    description VARCHAR(500),
+    attr_enabled BOOLEAN NOT NULL,
+    material_enabled BOOLEAN NOT NULL,
+    weighed_enabled BOOLEAN NOT NULL,
     active BOOLEAN NOT NULL,
+    creator VARCHAR(32) DEFAULT 'system',
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updater VARCHAR(32) DEFAULT 'system',
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    del_flag INT DEFAULT 1,
+    test_flag INT DEFAULT 0
+);
+
+CREATE TABLE da_product_sku (
+    id BIGINT PRIMARY KEY,
+    product_id BIGINT NOT NULL,
+    store_id BIGINT NOT NULL,
+    sku_code VARCHAR(64),
+    barcode VARCHAR(64),
+    spec_key VARCHAR(255) NOT NULL,
+    spec_name VARCHAR(255) NOT NULL,
+    price_in_cent INT NOT NULL,
+    line_price_in_cent INT NOT NULL,
+    cost_price_in_cent INT NOT NULL,
+    box_fee_in_cent INT NOT NULL,
+    stock_qty INT NOT NULL,
+    auto_replenish BOOLEAN NOT NULL,
+    weight_unit_gram INT,
+    sort_order INT NOT NULL,
+    active BOOLEAN NOT NULL,
+    creator VARCHAR(32) DEFAULT 'system',
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updater VARCHAR(32) DEFAULT 'system',
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    del_flag INT DEFAULT 1,
+    test_flag INT DEFAULT 0
+);
+
+CREATE TABLE da_product_spec (
+    id BIGINT PRIMARY KEY,
+    product_id BIGINT NOT NULL,
+    store_id BIGINT NOT NULL,
+    name VARCHAR(64) NOT NULL,
+    sort_order INT NOT NULL,
+    creator VARCHAR(32) DEFAULT 'system',
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updater VARCHAR(32) DEFAULT 'system',
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    del_flag INT DEFAULT 1,
+    test_flag INT DEFAULT 0
+);
+
+CREATE TABLE da_product_spec_value (
+    id BIGINT PRIMARY KEY,
+    product_spec_id BIGINT NOT NULL,
+    product_id BIGINT NOT NULL,
+    store_id BIGINT NOT NULL,
+    name VARCHAR(64) NOT NULL,
+    sort_order INT NOT NULL,
+    creator VARCHAR(32) DEFAULT 'system',
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updater VARCHAR(32) DEFAULT 'system',
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    del_flag INT DEFAULT 1,
+    test_flag INT DEFAULT 0
+);
+
+CREATE TABLE da_product_attr (
+    id BIGINT PRIMARY KEY,
+    product_id BIGINT NOT NULL,
+    store_id BIGINT NOT NULL,
+    name VARCHAR(64) NOT NULL,
+    sort_order INT NOT NULL,
+    creator VARCHAR(32) DEFAULT 'system',
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updater VARCHAR(32) DEFAULT 'system',
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    del_flag INT DEFAULT 1,
+    test_flag INT DEFAULT 0
+);
+
+CREATE TABLE da_product_attr_value (
+    id BIGINT PRIMARY KEY,
+    product_attr_id BIGINT NOT NULL,
+    product_id BIGINT NOT NULL,
+    store_id BIGINT NOT NULL,
+    name VARCHAR(64) NOT NULL,
+    is_default BOOLEAN NOT NULL,
+    sort_order INT NOT NULL,
     creator VARCHAR(32) DEFAULT 'system',
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updater VARCHAR(32) DEFAULT 'system',

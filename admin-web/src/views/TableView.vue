@@ -90,7 +90,7 @@
             {{ formatCurrency(row.currentAmountInCent) }}
           </template>
         </el-table-column>
-        <el-table-column v-if="canOperateTable" :label="t('common.actions')" min-width="220" fixed="right">
+        <el-table-column v-if="canOperateTable" :label="t('common.actions')" min-width="280" fixed="right">
           <template #default="{ row }">
             <div class="table-actions">
               <el-button v-if="canUpdateTable" link type="primary" @click="openEditDialog(row)">{{ t('common.edit') }}</el-button>
@@ -118,6 +118,7 @@
               >
                 {{ t('table.actions.disable') }}
               </el-button>
+              <el-button v-if="canDeleteTable" link type="danger" @click="handleDelete(row)">{{ t('common.delete') }}</el-button>
             </div>
           </template>
         </el-table-column>
@@ -174,6 +175,7 @@ import { fetchStores, type StoreSummary } from '@/api/stores';
 import { fetchTableAreas, type TableAreaSummary } from '@/api/table-areas';
 import {
   createTable,
+  deleteTable,
   fetchTables,
   updateTable,
   updateTableStatus,
@@ -229,7 +231,8 @@ const disabledCount = computed(() => rows.value.filter((item) => item.status ===
 const canCreateTable = computed(() => authStore.hasPermission('table:create'));
 const canUpdateTable = computed(() => authStore.hasPermission('table:update'));
 const canUpdateTableStatus = computed(() => authStore.hasPermission('table:status'));
-const canOperateTable = computed(() => canUpdateTable.value || canUpdateTableStatus.value);
+const canDeleteTable = computed(() => authStore.hasPermission('table:delete'));
+const canOperateTable = computed(() => canUpdateTable.value || canUpdateTableStatus.value || canDeleteTable.value);
 
 const rules: FormRules<TableFormModel> = {
   storeId: [{ required: true, message: t('table.form.storePlaceholder'), trigger: 'change' }],
@@ -269,7 +272,7 @@ function statusTagType(status: string): 'success' | 'warning' | 'danger' | 'info
 }
 
 function formatCurrency(valueInCent: number): string {
-  return valueInCent > 0 ? `¥ ${(valueInCent / 100).toFixed(2)}` : '-';
+  return valueInCent > 0 ? `$${(valueInCent / 100).toFixed(2)}` : '-';
 }
 
 function resetFilters() {
@@ -390,12 +393,37 @@ async function changeStatus(row: TableSummary, nextStatus: string) {
   }
   try {
     await ElMessageBox.confirm(
-      `${row.tableName} · ${t(`dict.tableStatus.${nextStatus}`)}`,
+      `${row.tableName} - ${t(`dict.tableStatus.${nextStatus}`)}`,
       t('common.actions'),
       { type: 'warning' },
     );
     await updateTableStatus(row.id, nextStatus);
     ElMessage.success(t('common.save'));
+    await loadRows();
+  } catch (error) {
+    if (error === 'cancel' || error === 'close') {
+      return;
+    }
+    ElMessage.error(error instanceof Error ? error.message : t('common.requestFailed'));
+  }
+}
+
+async function handleDelete(row: TableSummary) {
+  if (!canDeleteTable.value) {
+    return;
+  }
+  try {
+    await ElMessageBox.confirm(
+      t('table.delete.confirm', { name: row.tableName }),
+      t('table.delete.title'),
+      {
+        type: 'warning',
+        confirmButtonText: t('common.yes'),
+        cancelButtonText: t('common.cancel'),
+      },
+    );
+    await deleteTable(row.id);
+    ElMessage.success(t('table.delete.success'));
     await loadRows();
   } catch (error) {
     if (error === 'cancel' || error === 'close') {

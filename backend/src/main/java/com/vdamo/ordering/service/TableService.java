@@ -135,6 +135,17 @@ public class TableService {
         return getSummary(id);
     }
 
+    public void delete(Long id) {
+        TableEntity entity = requireTable(id);
+        permissionService.assertStoreAccess(entity.getStoreId());
+        Long orderCount = orderMapper.selectCount(
+                new LambdaQueryWrapper<OrderEntity>().eq(OrderEntity::getTableId, id));
+        if (orderCount != null && orderCount > 0) {
+            throw new BadRequestException("Table is referenced by orders and cannot be deleted");
+        }
+        tableMapper.deleteById(entity.getId());
+    }
+
     private Map<Long, TableCurrentOrderSummary> buildCurrentOrderMap(List<Long> storeIds) {
         List<OrderEntity> openOrders = orderMapper.selectList(
                 new LambdaQueryWrapper<OrderEntity>()

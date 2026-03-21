@@ -126,6 +126,21 @@ public class ProductCategoryService {
         return getSummary(id);
     }
 
+    public void delete(Long id) {
+        ProductCategoryEntity entity = requireCategory(id);
+        permissionService.assertStoreAccess(entity.getStoreId());
+
+        Long productCount = productMapper.selectCount(
+                new LambdaQueryWrapper<ProductEntity>()
+                        .eq(ProductEntity::getStoreId, entity.getStoreId())
+                        .eq(ProductEntity::getCategoryCode, entity.getCategoryCode()));
+        if (productCount != null && productCount > 0) {
+            throw new BadRequestException("Product category has products and cannot be deleted");
+        }
+
+        productCategoryMapper.deleteById(entity.getId());
+    }
+
     private void applyCategoryValues(ProductCategoryEntity entity, ProductCategoryUpsertRequest request) {
         String categoryName = request.categoryName().trim();
         String categoryCode = request.categoryCode().trim().toUpperCase(Locale.ROOT);

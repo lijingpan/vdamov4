@@ -100,3 +100,9 @@ export async function updateProductCategoryEnabled(id: number, enabled: boolean)
   });
   return toProductCategorySummary(raw);
 }
+
+export async function deleteProductCategory(id: number): Promise<void> {
+  await request<void>(`/api/v1/product-categories/${id}`, {
+    method: 'DELETE',
+  });
+}

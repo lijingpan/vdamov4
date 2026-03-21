@@ -6,8 +6,22 @@ import com.vdamo.ordering.common.exception.NotFoundException;
 import com.vdamo.ordering.common.support.IdGenerator;
 import com.vdamo.ordering.entity.StoreEntity;
 import com.vdamo.ordering.entity.SysUserStoreEntity;
+import com.vdamo.ordering.entity.MemberEntity;
+import com.vdamo.ordering.entity.OrderEntity;
+import com.vdamo.ordering.entity.ProductCategoryEntity;
+import com.vdamo.ordering.entity.ProductEntity;
+import com.vdamo.ordering.entity.StoreDeviceEntity;
+import com.vdamo.ordering.entity.TableAreaEntity;
+import com.vdamo.ordering.entity.TableEntity;
+import com.vdamo.ordering.mapper.MemberMapper;
+import com.vdamo.ordering.mapper.OrderMapper;
+import com.vdamo.ordering.mapper.ProductCategoryMapper;
+import com.vdamo.ordering.mapper.ProductMapper;
+import com.vdamo.ordering.mapper.StoreDeviceMapper;
 import com.vdamo.ordering.mapper.StoreMapper;
 import com.vdamo.ordering.mapper.SysUserStoreMapper;
+import com.vdamo.ordering.mapper.TableAreaMapper;
+import com.vdamo.ordering.mapper.TableMapper;
 import com.vdamo.ordering.model.StoreStatusUpdateRequest;
 import com.vdamo.ordering.model.StoreSummary;
 import com.vdamo.ordering.model.StoreUpsertRequest;
@@ -28,17 +42,38 @@ public class StoreService {
 
     private final StoreMapper storeMapper;
     private final SysUserStoreMapper sysUserStoreMapper;
+    private final StoreDeviceMapper storeDeviceMapper;
+    private final MemberMapper memberMapper;
+    private final ProductMapper productMapper;
+    private final ProductCategoryMapper productCategoryMapper;
+    private final TableMapper tableMapper;
+    private final TableAreaMapper tableAreaMapper;
+    private final OrderMapper orderMapper;
     private final PermissionService permissionService;
     private final IdGenerator idGenerator;
 
     public StoreService(
             StoreMapper storeMapper,
             SysUserStoreMapper sysUserStoreMapper,
+            StoreDeviceMapper storeDeviceMapper,
+            MemberMapper memberMapper,
+            ProductMapper productMapper,
+            ProductCategoryMapper productCategoryMapper,
+            TableMapper tableMapper,
+            TableAreaMapper tableAreaMapper,
+            OrderMapper orderMapper,
             PermissionService permissionService,
             IdGenerator idGenerator
     ) {
         this.storeMapper = storeMapper;
         this.sysUserStoreMapper = sysUserStoreMapper;
+        this.storeDeviceMapper = storeDeviceMapper;
+        this.memberMapper = memberMapper;
+        this.productMapper = productMapper;
+        this.productCategoryMapper = productCategoryMapper;
+        this.tableMapper = tableMapper;
+        this.tableAreaMapper = tableAreaMapper;
+        this.orderMapper = orderMapper;
         this.permissionService = permissionService;
         this.idGenerator = idGenerator;
     }
@@ -101,6 +136,49 @@ public class StoreService {
         entity.setUpdater(permissionService.currentUser().username());
         storeMapper.updateById(entity);
         return toSummary(entity);
+    }
+
+    public void delete(Long id) {
+        permissionService.assertSuperAdmin();
+
+        StoreEntity entity = requireStore(id);
+
+        ensureNoDependencies(id);
+        sysUserStoreMapper.delete(new LambdaQueryWrapper<SysUserStoreEntity>().eq(SysUserStoreEntity::getStoreId, id));
+        storeMapper.deleteById(entity.getId());
+    }
+
+    private void ensureNoDependencies(Long storeId) {
+        assertNoBindings(
+                sysUserStoreMapper.selectCount(new LambdaQueryWrapper<SysUserStoreEntity>().eq(SysUserStoreEntity::getStoreId, storeId)),
+                "Store is assigned to users and cannot be deleted");
+        assertNoBindings(
+                storeDeviceMapper.selectCount(new LambdaQueryWrapper<StoreDeviceEntity>().eq(StoreDeviceEntity::getStoreId, storeId)),
+                "Store has devices and cannot be deleted");
+        assertNoBindings(
+                memberMapper.selectCount(new LambdaQueryWrapper<MemberEntity>().eq(MemberEntity::getStoreId, storeId)),
+                "Store has members and cannot be deleted");
+        assertNoBindings(
+                productMapper.selectCount(new LambdaQueryWrapper<ProductEntity>().eq(ProductEntity::getStoreId, storeId)),
+                "Store has products and cannot be deleted");
+        assertNoBindings(
+                productCategoryMapper.selectCount(new LambdaQueryWrapper<ProductCategoryEntity>().eq(ProductCategoryEntity::getStoreId, storeId)),
+                "Store has product categories and cannot be deleted");
+        assertNoBindings(
+                tableMapper.selectCount(new LambdaQueryWrapper<TableEntity>().eq(TableEntity::getStoreId, storeId)),
+                "Store has tables and cannot be deleted");
+        assertNoBindings(
+                tableAreaMapper.selectCount(new LambdaQueryWrapper<TableAreaEntity>().eq(TableAreaEntity::getStoreId, storeId)),
+                "Store has table areas and cannot be deleted");
+        assertNoBindings(
+                orderMapper.selectCount(new LambdaQueryWrapper<OrderEntity>().eq(OrderEntity::getStoreId, storeId)),
+                "Store has orders and cannot be deleted");
+    }
+
+    private void assertNoBindings(Long count, String message) {
+        if (count != null && count > 0) {
+            throw new BadRequestException(message);
+        }
     }
 
     private void applyStoreValues(StoreEntity entity, StoreUpsertRequest request) {
