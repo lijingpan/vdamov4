@@ -5,6 +5,7 @@ public record MenuSummary(
         Long parentId,
         String parentName,
         String name,
+        String menuType,
         String route,
         String permissionCode,
         Integer sortOrder

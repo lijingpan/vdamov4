@@ -20,6 +20,7 @@ export const useAuthStore = defineStore('auth', () => {
   const initialized = ref(false);
 
   const isAuthenticated = computed(() => Boolean(token.value && user.value));
+  const isSuperAdmin = computed(() => user.value?.roleCodes.includes('SUPER_ADMIN') ?? false);
   const allowedRoutes = computed(() => menus.value.map((item) => item.route).filter((item) => Boolean(item)));
   const permissionCodes = computed(() => {
     const fromUser = user.value?.permissionCodes ?? [];
@@ -85,6 +86,9 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function canAccess(path: string): boolean {
+    if (isSuperAdmin.value) {
+      return true;
+    }
     return allowedRoutes.value.includes(path);
   }
 
@@ -96,6 +100,9 @@ export const useAuthStore = defineStore('auth', () => {
     if (!permissionCode) {
       return true;
     }
+    if (isSuperAdmin.value) {
+      return true;
+    }
     return permissionCodes.value.includes(permissionCode);
   }
 
@@ -105,6 +112,7 @@ export const useAuthStore = defineStore('auth', () => {
     menus,
     initialized,
     isAuthenticated,
+    isSuperAdmin,
     allowedRoutes,
     permissionCodes,
     firstMenuPath,

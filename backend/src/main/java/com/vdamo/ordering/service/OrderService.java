@@ -18,10 +18,14 @@ import com.vdamo.ordering.mapper.OrderMapper;
 import com.vdamo.ordering.mapper.PaymentRecordMapper;
 import com.vdamo.ordering.mapper.StoreMapper;
 import com.vdamo.ordering.mapper.TableMapper;
+import com.vdamo.ordering.model.OrderBatchCompleteRequest;
+import com.vdamo.ordering.model.OrderBatchPaymentStatusUpdateRequest;
+import com.vdamo.ordering.model.OrderBatchStatusUpdateRequest;
 import com.vdamo.ordering.model.OrderDetailResponse;
 import com.vdamo.ordering.model.OrderPaymentStatusUpdateRequest;
 import com.vdamo.ordering.model.OrderStatusUpdateRequest;
 import com.vdamo.ordering.model.OrderSummary;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -295,15 +299,7 @@ public class OrderService {
         permissionService.assertStoreAccess(order.getStoreId());
 
         String targetPaymentStatus = normalizePaymentStatus(request.paymentStatus());
-        order.setPaymentStatus(targetPaymentStatus);
-        if ("PAID".equals(targetPaymentStatus)) {
-            order.setPaidAmountInCent(defaultInt(order.getPayableAmountInCent()));
-        } else if ("UNPAID".equals(targetPaymentStatus) || "REFUNDED".equals(targetPaymentStatus)) {
-            order.setPaidAmountInCent(0);
-        } else {
-            order.setPaidAmountInCent(Math.min(defaultInt(order.getPaidAmountInCent()), defaultInt(order.getPayableAmountInCent())));
-        }
-        order.setUpdater(permissionService.currentUser().username());
+        applyPaymentStatus(order, targetPaymentStatus);
         orderMapper.updateById(order);
         return getDetail(orderId);
     }
@@ -311,16 +307,49 @@ public class OrderService {
     public OrderDetailResponse completeOrder(Long orderId) {
         OrderEntity order = requireOrder(orderId);
         permissionService.assertStoreAccess(order.getStoreId());
-        if (!"PAID".equals(order.getPaymentStatus())) {
-            throw new BadRequestException("Order must be PAID before completion");
+        applyCompleteOrder(order);
+        return getDetail(orderId);
+    }
+
+    public List<Long> batchUpdateOrderStatus(OrderBatchStatusUpdateRequest request) {
+        String targetStatus = normalizeOrderStatus(request.orderStatus());
+        List<OrderEntity> orders = loadBatchOrders(request.orderIds());
+        for (OrderEntity order : orders) {
+            if ("COMPLETED".equals(targetStatus) && !"PAID".equals(order.getPaymentStatus())) {
+                throw new BadRequestException("Order must be paid before marking completed");
+            }
         }
 
-        order.setOrderStatus("COMPLETED");
-        order.setPaidAmountInCent(defaultInt(order.getPayableAmountInCent()));
-        order.setUpdater(permissionService.currentUser().username());
-        orderMapper.updateById(order);
-        syncTableStatusForOrder(order, "COMPLETED");
-        return getDetail(orderId);
+        for (OrderEntity order : orders) {
+            order.setOrderStatus(targetStatus);
+            order.setUpdater(permissionService.currentUser().username());
+            orderMapper.updateById(order);
+            syncTableStatusForOrder(order, targetStatus);
+        }
+        return orders.stream().map(OrderEntity::getId).toList();
+    }
+
+    public List<Long> batchUpdatePaymentStatus(OrderBatchPaymentStatusUpdateRequest request) {
+        String targetPaymentStatus = normalizePaymentStatus(request.paymentStatus());
+        List<OrderEntity> orders = loadBatchOrders(request.orderIds());
+        for (OrderEntity order : orders) {
+            applyPaymentStatus(order, targetPaymentStatus);
+            orderMapper.updateById(order);
+        }
+        return orders.stream().map(OrderEntity::getId).toList();
+    }
+
+    public List<Long> batchCompleteOrders(OrderBatchCompleteRequest request) {
+        List<OrderEntity> orders = loadBatchOrders(request.orderIds());
+        for (OrderEntity order : orders) {
+            if (!"PAID".equals(order.getPaymentStatus())) {
+                throw new BadRequestException("Order must be PAID before completion");
+            }
+        }
+        for (OrderEntity order : orders) {
+            applyCompleteOrder(order);
+        }
+        return orders.stream().map(OrderEntity::getId).toList();
     }
 
     private OrderSummary toSummary(
@@ -351,6 +380,49 @@ public class OrderService {
 
     private int defaultInt(Integer value) {
         return value == null ? 0 : value;
+    }
+
+    private void applyPaymentStatus(OrderEntity order, String targetPaymentStatus) {
+        order.setPaymentStatus(targetPaymentStatus);
+        if ("PAID".equals(targetPaymentStatus)) {
+            order.setPaidAmountInCent(defaultInt(order.getPayableAmountInCent()));
+        } else if ("UNPAID".equals(targetPaymentStatus) || "REFUNDED".equals(targetPaymentStatus)) {
+            order.setPaidAmountInCent(0);
+        } else {
+            order.setPaidAmountInCent(Math.min(defaultInt(order.getPaidAmountInCent()), defaultInt(order.getPayableAmountInCent())));
+        }
+        order.setUpdater(permissionService.currentUser().username());
+    }
+
+    private void applyCompleteOrder(OrderEntity order) {
+        if (!"PAID".equals(order.getPaymentStatus())) {
+            throw new BadRequestException("Order must be PAID before completion");
+        }
+        order.setOrderStatus("COMPLETED");
+        order.setPaidAmountInCent(defaultInt(order.getPayableAmountInCent()));
+        order.setUpdater(permissionService.currentUser().username());
+        orderMapper.updateById(order);
+        syncTableStatusForOrder(order, "COMPLETED");
+    }
+
+    private List<OrderEntity> loadBatchOrders(List<Long> orderIds) {
+        Map<Long, Long> dedupedIds = new LinkedHashMap<>();
+        for (Long orderId : orderIds) {
+            if (orderId == null || orderId <= 0) {
+                throw new BadRequestException("Order ids contain invalid value");
+            }
+            dedupedIds.putIfAbsent(orderId, orderId);
+        }
+        List<Long> distinctIds = List.copyOf(dedupedIds.values());
+        List<OrderEntity> orders = orderMapper.selectBatchIds(distinctIds);
+        if (orders.size() != distinctIds.size()) {
+            throw new NotFoundException(messageHelper.get("error.order.notFound"));
+        }
+        Map<Long, OrderEntity> orderMap = orders.stream().collect(Collectors.toMap(OrderEntity::getId, item -> item));
+        for (OrderEntity order : orders) {
+            permissionService.assertStoreAccess(order.getStoreId());
+        }
+        return distinctIds.stream().map(orderMap::get).toList();
     }
 
     private String normalizeOrderStatus(String value) {

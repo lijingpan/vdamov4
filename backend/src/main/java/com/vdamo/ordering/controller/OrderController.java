@@ -2,6 +2,9 @@ package com.vdamo.ordering.controller;
 
 import com.vdamo.ordering.common.api.ApiResponse;
 import com.vdamo.ordering.common.i18n.MessageHelper;
+import com.vdamo.ordering.model.OrderBatchCompleteRequest;
+import com.vdamo.ordering.model.OrderBatchPaymentStatusUpdateRequest;
+import com.vdamo.ordering.model.OrderBatchStatusUpdateRequest;
 import com.vdamo.ordering.model.OrderDetailResponse;
 import com.vdamo.ordering.model.OrderPaymentStatusUpdateRequest;
 import com.vdamo.ordering.model.OrderStatusUpdateRequest;
@@ -75,5 +78,25 @@ public class OrderController {
     public ApiResponse<OrderDetailResponse> completeOrder(@PathVariable Long orderId) {
         permissionService.assertPermission("order:complete");
         return ApiResponse.success(messageHelper.get("success.fetch"), orderService.completeOrder(orderId));
+    }
+
+    @PatchMapping("/status")
+    public ApiResponse<List<Long>> batchUpdateOrderStatus(@Valid @RequestBody OrderBatchStatusUpdateRequest request) {
+        permissionService.assertPermission("order:update-status");
+        return ApiResponse.success(messageHelper.get("success.fetch"), orderService.batchUpdateOrderStatus(request));
+    }
+
+    @PatchMapping("/payment-status")
+    public ApiResponse<List<Long>> batchUpdatePaymentStatus(
+            @Valid @RequestBody OrderBatchPaymentStatusUpdateRequest request
+    ) {
+        permissionService.assertPermission("order:update-payment");
+        return ApiResponse.success(messageHelper.get("success.fetch"), orderService.batchUpdatePaymentStatus(request));
+    }
+
+    @PatchMapping("/complete")
+    public ApiResponse<List<Long>> batchCompleteOrders(@Valid @RequestBody OrderBatchCompleteRequest request) {
+        permissionService.assertPermission("order:complete");
+        return ApiResponse.success(messageHelper.get("success.fetch"), orderService.batchCompleteOrders(request));
     }
 }

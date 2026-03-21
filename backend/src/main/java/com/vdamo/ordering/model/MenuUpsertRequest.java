@@ -8,6 +8,7 @@ public record MenuUpsertRequest(
         Long parentId,
         @NotBlank(message = "Menu name is required")
         String name,
+        String menuType,
         String route,
         @NotBlank(message = "Permission code is required")
         String permissionCode,

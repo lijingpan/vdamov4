@@ -90,10 +90,11 @@
             </el-space>
           </template>
         </el-table-column>
-        <el-table-column v-if="canUpdateUser" :label="t('common.actions')" min-width="120" fixed="right">
+        <el-table-column v-if="canUpdateUser || canDeleteUser" :label="t('common.actions')" min-width="180" fixed="right">
           <template #default="{ row }">
             <div class="table-actions">
-              <el-button link type="primary" @click="openEditDialog(row)">{{ t('common.edit') }}</el-button>
+              <el-button v-if="canUpdateUser" link type="primary" @click="openEditDialog(row)">{{ t('common.edit') }}</el-button>
+              <el-button v-if="canDeleteUser" link type="danger" @click="handleDelete(row)">{{ t('common.delete') }}</el-button>
             </div>
           </template>
         </el-table-column>
@@ -126,7 +127,7 @@
         </el-form-item>
         <el-form-item :label="t('user.form.roleIds')" prop="roleIds">
           <el-select v-model="form.roleIds" multiple filterable :placeholder="t('user.form.roleIdsPlaceholder')">
-            <el-option v-for="item in roleOptions" :key="item.id" :label="`${item.code} · ${item.name}`" :value="item.id" />
+            <el-option v-for="item in roleOptions" :key="item.id" :label="`${item.code} / ${item.name}`" :value="item.id" />
           </el-select>
         </el-form-item>
         <el-form-item :label="t('user.form.storeIds')" prop="storeIds">
@@ -146,12 +147,12 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
 import { Plus, RefreshRight } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
 import { fetchRoles, type RoleSummary } from '@/api/roles';
 import { fetchStores, type StoreSummary } from '@/api/stores';
-import { createUser, fetchUsers, updateUser, type UserPayload, type UserSummary } from '@/api/users';
+import { createUser, deleteUser, fetchUsers, updateUser, type UserPayload, type UserSummary } from '@/api/users';
 import PageShell from '@/components/PageShell.vue';
 import { useAuthStore } from '@/stores/auth';
 
@@ -197,6 +198,7 @@ const form = reactive<UserFormModel>({
 
 const canCreateUser = computed(() => authStore.hasPermission('user:create'));
 const canUpdateUser = computed(() => authStore.hasPermission('user:update'));
+const canDeleteUser = computed(() => authStore.hasPermission('user:delete'));
 const enabledCount = computed(() => rows.value.filter((item) => item.enabled).length);
 const disabledCount = computed(() => rows.value.filter((item) => !item.enabled).length);
 const roleIdByCode = computed(() =>
@@ -347,6 +349,30 @@ async function submitForm() {
     ElMessage.error(error instanceof Error ? error.message : t('common.requestFailed'));
   } finally {
     submitting.value = false;
+  }
+}
+
+async function handleDelete(row: UserSummary) {
+  try {
+    await ElMessageBox.confirm(
+      t('user.delete.confirm', { name: row.displayName || row.username }),
+      t('user.delete.title'),
+      {
+        type: 'warning',
+        confirmButtonText: t('common.yes'),
+        cancelButtonText: t('common.cancel'),
+      },
+    );
+  } catch {
+    return;
+  }
+
+  try {
+    await deleteUser(row.id);
+    ElMessage.success(t('user.delete.success'));
+    await loadData();
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : t('common.requestFailed'));
   }
 }
 

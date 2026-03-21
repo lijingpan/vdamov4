@@ -21,6 +21,9 @@ import org.springframework.util.StringUtils;
 @Service
 public class MenuService {
 
+    private static final String MENU_TYPE_MENU = "MENU";
+    private static final String MENU_TYPE_BUTTON = "BUTTON";
+
     private final SysMenuMapper sysMenuMapper;
     private final SysRoleMenuMapper sysRoleMenuMapper;
     private final PermissionService permissionService;
@@ -40,6 +43,7 @@ public class MenuService {
 
     public List<MenuSummary> listCurrentByRoleIds(List<Long> roleIds) {
         return toSummaries(listEntitiesByRoleIds(roleIds).stream()
+                .filter(menu -> MENU_TYPE_MENU.equals(resolveMenuType(menu)))
                 .filter(menu -> StringUtils.hasText(menu.getRoute()))
                 .toList());
     }
@@ -91,6 +95,24 @@ public class MenuService {
         return toSummary(entity);
     }
 
+    public void delete(Long id) {
+        SysMenuEntity entity = requireMenu(id);
+
+        Long childCount = sysMenuMapper.selectCount(
+                new LambdaQueryWrapper<SysMenuEntity>().eq(SysMenuEntity::getParentId, id));
+        if (childCount != null && childCount > 0) {
+            throw new BadRequestException("Please delete child menus first");
+        }
+
+        Long roleBindingCount = sysRoleMenuMapper.selectCount(
+                new LambdaQueryWrapper<SysRoleMenuEntity>().eq(SysRoleMenuEntity::getMenuId, id));
+        if (roleBindingCount != null && roleBindingCount > 0) {
+            throw new BadRequestException("Menu is assigned to roles and cannot be deleted");
+        }
+
+        sysMenuMapper.deleteById(entity.getId());
+    }
+
     private List<SysMenuEntity> listEntitiesByRoleIds(List<Long> roleIds) {
         if (roleIds == null || roleIds.isEmpty()) {
             return List.of();
@@ -114,27 +136,68 @@ public class MenuService {
     }
 
     private void applyMenuValues(SysMenuEntity entity, MenuUpsertRequest request) {
+        String menuType = normalizeMenuType(request.menuType(), request.route());
         Long parentId = request.parentId();
         if (parentId != null) {
             if (entity.getId() != null && entity.getId().equals(parentId)) {
                 throw new BadRequestException("Menu parent cannot be itself");
             }
-            requireMenu(parentId);
+            SysMenuEntity parent = requireMenu(parentId);
+            if (MENU_TYPE_BUTTON.equals(resolveMenuType(parent))) {
+                throw new BadRequestException("Button cannot be parent menu");
+            }
+        }
+        if (MENU_TYPE_BUTTON.equals(menuType) && parentId == null) {
+            throw new BadRequestException("Button must have a parent menu");
         }
 
         String name = request.name().trim();
         String route = StringUtils.hasText(request.route()) ? request.route().trim() : "";
         String permissionCode = request.permissionCode().trim();
+        if (MENU_TYPE_MENU.equals(menuType) && !StringUtils.hasText(route)) {
+            throw new BadRequestException("Menu route is required");
+        }
+        if (MENU_TYPE_BUTTON.equals(menuType)) {
+            if (hasChildren(entity.getId())) {
+                throw new BadRequestException("Button menu cannot have child menus");
+            }
+            route = "";
+        }
 
         validatePermissionCodeUnique(entity.getId(), permissionCode);
         validateRouteUnique(entity.getId(), route);
 
         entity.setParentId(parentId);
         entity.setName(name);
+        entity.setMenuType(menuType);
         entity.setRoute(route);
         entity.setPermissionCode(permissionCode);
         entity.setSortOrder(request.sortOrder());
         entity.setUpdater(permissionService.currentUser().username());
+    }
+
+    private boolean hasChildren(Long id) {
+        if (id == null) {
+            return false;
+        }
+        Long childCount = sysMenuMapper.selectCount(
+                new LambdaQueryWrapper<SysMenuEntity>().eq(SysMenuEntity::getParentId, id));
+        return childCount != null && childCount > 0;
+    }
+
+    private String normalizeMenuType(String menuTypeValue, String routeValue) {
+        if (!StringUtils.hasText(menuTypeValue)) {
+            return StringUtils.hasText(routeValue) ? MENU_TYPE_MENU : MENU_TYPE_BUTTON;
+        }
+        String normalized = menuTypeValue.trim().toUpperCase();
+        if (!MENU_TYPE_MENU.equals(normalized) && !MENU_TYPE_BUTTON.equals(normalized)) {
+            throw new BadRequestException("Menu type must be MENU or BUTTON");
+        }
+        return normalized;
+    }
+
+    private String resolveMenuType(SysMenuEntity entity) {
+        return normalizeMenuType(entity.getMenuType(), entity.getRoute());
     }
 
     private void validatePermissionCodeUnique(Long currentId, String permissionCode) {
@@ -192,6 +255,7 @@ public class MenuService {
                         menu.getParentId(),
                         menu.getParentId() == null ? null : parentNameById.getOrDefault(menu.getParentId(), ""),
                         menu.getName(),
+                        resolveMenuType(menu),
                         menu.getRoute(),
                         menu.getPermissionCode(),
                         menu.getSortOrder()))

@@ -78,6 +78,21 @@
         <el-table-column prop="id" :label="t('store.columns.id')" min-width="120" />
         <el-table-column prop="name" :label="t('store.columns.name')" min-width="220" />
         <el-table-column prop="countryCode" :label="t('store.columns.countryCode')" min-width="130" />
+        <el-table-column :label="t('store.form.address')" min-width="260" show-overflow-tooltip>
+          <template #default="{ row }">
+            <span class="table-muted">{{ row.address }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column :label="t('store.form.latitude')" min-width="140">
+          <template #default="{ row }">
+            <span class="table-muted">{{ formatCoordinate(row.latitude) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column :label="t('store.form.longitude')" min-width="140">
+          <template #default="{ row }">
+            <span class="table-muted">{{ formatCoordinate(row.longitude) }}</span>
+          </template>
+        </el-table-column>
         <el-table-column :label="t('store.columns.businessTypes')" min-width="220">
           <template #default="{ row }">
             <el-space wrap>
@@ -131,7 +146,7 @@
     <el-dialog
       v-model="dialogVisible"
       :title="dialogMode === 'create' ? t('store.toolbar.add') : t('common.edit')"
-      width="520px"
+      width="640px"
       destroy-on-close
     >
       <el-form ref="formRef" :model="form" :rules="rules" label-position="top" class="dialog-form">
@@ -141,6 +156,43 @@
         <el-form-item :label="t('store.form.countryCode')" prop="countryCode">
           <el-input v-model="form.countryCode" maxlength="8" :placeholder="t('store.form.countryCodePlaceholder')" />
         </el-form-item>
+        <el-form-item :label="t('store.form.address')" prop="address">
+          <el-input v-model="form.address" :placeholder="t('store.form.addressPlaceholder')">
+            <template #append>
+              <el-button :icon="Location" @click="openMapDialog">{{ t('store.form.pickOnMap') }}</el-button>
+            </template>
+          </el-input>
+        </el-form-item>
+        <el-row :gutter="12">
+          <el-col :span="12">
+            <el-form-item :label="t('store.form.latitude')" prop="latitude">
+              <el-input-number
+                v-model="form.latitude"
+                :min="-90"
+                :max="90"
+                controls-position="right"
+                :precision="6"
+                :step="0.000001"
+                style="width: 100%"
+                :placeholder="t('store.form.latitudePlaceholder')"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item :label="t('store.form.longitude')" prop="longitude">
+              <el-input-number
+                v-model="form.longitude"
+                :min="-180"
+                :max="180"
+                controls-position="right"
+                :precision="6"
+                :step="0.000001"
+                style="width: 100%"
+                :placeholder="t('store.form.longitudePlaceholder')"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
         <el-form-item :label="t('store.form.businessStatus')" prop="businessStatus">
           <el-select v-model="form.businessStatus">
             <el-option
@@ -165,15 +217,25 @@
         <el-button type="primary" :loading="submitting" @click="submitForm">{{ t('common.save') }}</el-button>
       </template>
     </el-dialog>
+
+    <GoogleMapPickerDialog
+      v-model="mapDialogVisible"
+      :address="form.address"
+      :country-code="form.countryCode"
+      :latitude="form.latitude"
+      :longitude="form.longitude"
+      @select="applyMapSelection"
+    />
   </PageShell>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus';
-import { Plus, RefreshRight } from '@element-plus/icons-vue';
+import { Location, Plus, RefreshRight } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
 import { createStore, fetchStores, updateStore, updateStoreStatus, type StorePayload, type StoreSummary } from '@/api/stores';
+import GoogleMapPickerDialog from '@/components/GoogleMapPickerDialog.vue';
 import PageShell from '@/components/PageShell.vue';
 import { useAuthStore } from '@/stores/auth';
 
@@ -186,6 +248,9 @@ interface StoreFormModel {
   id?: number;
   name: string;
   countryCode: string;
+  address: string;
+  latitude?: number;
+  longitude?: number;
   businessStatus: string;
   businessTypes: string[];
 }
@@ -199,6 +264,7 @@ const errorMessage = ref('');
 const rows = ref<StoreSummary[]>([]);
 const formRef = ref<FormInstance>();
 const dialogVisible = ref(false);
+const mapDialogVisible = ref(false);
 const dialogMode = ref<'create' | 'edit'>('create');
 const filters = reactive<StoreFilters>({
   keyword: '',
@@ -207,6 +273,9 @@ const filters = reactive<StoreFilters>({
 const form = reactive<StoreFormModel>({
   name: '',
   countryCode: '',
+  address: '',
+  latitude: undefined,
+  longitude: undefined,
   businessStatus: 'OPEN',
   businessTypes: ['DINE_IN'],
 });
@@ -227,9 +296,20 @@ const summary = computed(() => ({
 const rules: FormRules<StoreFormModel> = {
   name: [{ required: true, message: t('store.form.namePlaceholder'), trigger: 'blur' }],
   countryCode: [{ required: true, message: t('store.form.countryCodePlaceholder'), trigger: 'blur' }],
+  address: [{ required: true, message: t('store.form.addressPlaceholder'), trigger: 'blur' }],
+  latitude: [{ required: true, message: t('store.form.latitudePlaceholder'), trigger: 'change' }],
+  longitude: [{ required: true, message: t('store.form.longitudePlaceholder'), trigger: 'change' }],
   businessStatus: [{ required: true, message: t('store.form.businessStatus'), trigger: 'change' }],
   businessTypes: [{ type: 'array', required: true, min: 1, message: t('store.form.businessTypes'), trigger: 'change' }],
 };
+
+function normalizeCoordinate(value: number | undefined): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? Number(value.toFixed(6)) : undefined;
+}
+
+function formatCoordinate(value: number | undefined): string {
+  return typeof value === 'number' && Number.isFinite(value) ? value.toFixed(6) : '-';
+}
 
 function statusType(status: string): 'success' | 'warning' | 'danger' | 'info' {
   if (status === 'OPEN') {
@@ -254,6 +334,9 @@ function resetForm() {
   form.id = undefined;
   form.name = '';
   form.countryCode = '';
+  form.address = '';
+  form.latitude = undefined;
+  form.longitude = undefined;
   form.businessStatus = 'OPEN';
   form.businessTypes = ['DINE_IN'];
   formRef.value?.clearValidate();
@@ -276,9 +359,22 @@ function openEditDialog(row: StoreSummary) {
   form.id = row.id;
   form.name = row.name;
   form.countryCode = row.countryCode;
+  form.address = row.address;
+  form.latitude = row.latitude;
+  form.longitude = row.longitude;
   form.businessStatus = row.businessStatus;
   form.businessTypes = [...row.businessTypes];
   dialogVisible.value = true;
+}
+
+function openMapDialog() {
+  mapDialogVisible.value = true;
+}
+
+function applyMapSelection(selection: { address: string; latitude: number; longitude: number }) {
+  form.address = selection.address;
+  form.latitude = selection.latitude;
+  form.longitude = selection.longitude;
 }
 
 async function loadStores() {
@@ -307,6 +403,9 @@ async function submitForm() {
     const payload: StorePayload = {
       name: form.name.trim(),
       countryCode: form.countryCode.trim().toUpperCase(),
+      address: form.address.trim(),
+      latitude: Number(normalizeCoordinate(form.latitude)),
+      longitude: Number(normalizeCoordinate(form.longitude)),
       businessStatus: form.businessStatus,
       businessTypes: [...form.businessTypes],
     };

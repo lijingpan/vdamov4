@@ -2,6 +2,7 @@ package com.vdamo.ordering.controller;
 
 import com.vdamo.ordering.common.api.ApiResponse;
 import com.vdamo.ordering.common.i18n.MessageHelper;
+import com.vdamo.ordering.model.ProductDetailResponse;
 import com.vdamo.ordering.model.ProductStatusUpdateRequest;
 import com.vdamo.ordering.model.ProductSummary;
 import com.vdamo.ordering.model.ProductUpsertRequest;
@@ -48,6 +49,12 @@ public class ProductController {
         return ApiResponse.success(
                 messageHelper.get("success.fetch"),
                 productService.list(storeId, active, categoryCode, keyword));
+    }
+
+    @GetMapping("/{id}")
+    public ApiResponse<ProductDetailResponse> detail(@PathVariable Long id) {
+        permissionService.assertPermission("product:view");
+        return ApiResponse.success(messageHelper.get("success.fetch"), productService.getDetail(id));
     }
 
     @PostMapping

@@ -12,7 +12,13 @@ public class ProductEntity extends BaseEntity {
     private String name;
     private String code;
     private String categoryCode;
+    private String productType;
+    private String specMode;
     private Integer priceInCent;
+    private String description;
+    private Boolean attrEnabled;
+    private Boolean materialEnabled;
+    private Boolean weighedEnabled;
     private Boolean active;
 
     public Long getId() {
@@ -55,12 +61,60 @@ public class ProductEntity extends BaseEntity {
         this.categoryCode = categoryCode;
     }
 
+    public String getProductType() {
+        return productType;
+    }
+
+    public void setProductType(String productType) {
+        this.productType = productType;
+    }
+
+    public String getSpecMode() {
+        return specMode;
+    }
+
+    public void setSpecMode(String specMode) {
+        this.specMode = specMode;
+    }
+
     public Integer getPriceInCent() {
         return priceInCent;
     }
 
     public void setPriceInCent(Integer priceInCent) {
         this.priceInCent = priceInCent;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public Boolean getAttrEnabled() {
+        return attrEnabled;
+    }
+
+    public void setAttrEnabled(Boolean attrEnabled) {
+        this.attrEnabled = attrEnabled;
+    }
+
+    public Boolean getMaterialEnabled() {
+        return materialEnabled;
+    }
+
+    public void setMaterialEnabled(Boolean materialEnabled) {
+        this.materialEnabled = materialEnabled;
+    }
+
+    public Boolean getWeighedEnabled() {
+        return weighedEnabled;
+    }
+
+    public void setWeighedEnabled(Boolean weighedEnabled) {
+        this.weighedEnabled = weighedEnabled;
     }
 
     public Boolean getActive() {

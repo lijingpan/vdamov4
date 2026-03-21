@@ -10,6 +10,7 @@ public class SysMenuEntity extends BaseEntity {
     private Long id;
     private Long parentId;
     private String name;
+    private String menuType;
     private String route;
     private String permissionCode;
     private Integer sortOrder;
@@ -40,6 +41,14 @@ public class SysMenuEntity extends BaseEntity {
 
     public String getRoute() {
         return route;
+    }
+
+    public String getMenuType() {
+        return menuType;
+    }
+
+    public void setMenuType(String menuType) {
+        this.menuType = menuType;
     }
 
     public void setRoute(String route) {

@@ -126,6 +126,22 @@ public class RoleService {
         return getSummary(id);
     }
 
+    public void delete(Long id) {
+        SysRoleEntity entity = requireRole(id);
+        if ("SUPER_ADMIN".equalsIgnoreCase(entity.getCode())) {
+            throw new BadRequestException("Super admin role cannot be deleted");
+        }
+
+        Long userBindingCount = sysUserRoleMapper.selectCount(
+                new LambdaQueryWrapper<SysUserRoleEntity>().eq(SysUserRoleEntity::getRoleId, id));
+        if (userBindingCount != null && userBindingCount > 0) {
+            throw new BadRequestException("Role is assigned to users and cannot be deleted");
+        }
+
+        sysRoleMenuMapper.delete(new LambdaQueryWrapper<SysRoleMenuEntity>().eq(SysRoleMenuEntity::getRoleId, id));
+        sysRoleMapper.deleteById(entity.getId());
+    }
+
     public List<SysRoleEntity> listEntitiesByUserId(Long userId) {
         List<Long> roleIds = sysUserRoleMapper.selectList(
                         new LambdaQueryWrapper<SysUserRoleEntity>().eq(SysUserRoleEntity::getUserId, userId))

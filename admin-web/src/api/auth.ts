@@ -14,6 +14,7 @@ export interface MenuSummary {
   parentId: number | null;
   name: string;
   route: string;
+  menuType?: 'MENU' | 'BUTTON';
   permissionCode: string;
   sortOrder: number;
 }

@@ -74,6 +74,62 @@
     <el-card shadow="never" class="page-card data-card">
       <div class="action-bar">
         <div class="action-bar__hint">{{ t('page.orders.description') }}</div>
+        <div v-if="selectedCount > 0" class="table-actions">
+          <span class="action-bar__hint">{{ t('order.batch.selectedCount', { count: selectedCount }) }}</span>
+          <el-select
+            v-if="canUpdateOrderStatus"
+            v-model="batchOrderStatus"
+            clearable
+            :placeholder="t('order.batch.orderStatusPlaceholder')"
+          >
+            <el-option
+              v-for="item in orderStatusOptions"
+              :key="item"
+              :label="orderStatusLabel(item)"
+              :value="item"
+            />
+          </el-select>
+          <el-button
+            v-if="canUpdateOrderStatus"
+            type="primary"
+            :loading="batchSaving"
+            :disabled="!batchOrderStatus"
+            @click="submitBatchOrderStatus"
+          >
+            {{ t('order.batch.updateOrderStatus') }}
+          </el-button>
+          <el-select
+            v-if="canUpdatePaymentStatus"
+            v-model="batchPaymentStatus"
+            clearable
+            :placeholder="t('order.batch.paymentStatusPlaceholder')"
+          >
+            <el-option
+              v-for="item in paymentStatusOptions"
+              :key="item"
+              :label="paymentStatusLabel(item)"
+              :value="item"
+            />
+          </el-select>
+          <el-button
+            v-if="canUpdatePaymentStatus"
+            type="primary"
+            :loading="batchSaving"
+            :disabled="!batchPaymentStatus"
+            @click="submitBatchPaymentStatus"
+          >
+            {{ t('order.batch.updatePaymentStatus') }}
+          </el-button>
+          <el-button
+            v-if="canCompleteOrder"
+            type="success"
+            :loading="batchCompleting"
+            @click="submitBatchCompleteOrders"
+          >
+            {{ t('order.batch.complete') }}
+          </el-button>
+          <el-button @click="clearSelection">{{ t('order.batch.clearSelection') }}</el-button>
+        </div>
       </div>
 
       <el-alert
@@ -85,7 +141,15 @@
         style="margin: 16px 0"
       />
 
-      <el-table v-loading="loading" :data="filteredRows" stripe>
+      <el-table
+        ref="tableRef"
+        v-loading="loading"
+        :data="filteredRows"
+        row-key="id"
+        stripe
+        @selection-change="handleSelectionChange"
+      >
+        <el-table-column type="selection" width="48" fixed="left" />
         <el-table-column prop="orderNo" :label="t('order.columns.orderNo')" min-width="180" />
         <el-table-column prop="storeName" :label="t('order.columns.storeName')" min-width="180" />
         <el-table-column prop="tableName" :label="t('order.columns.tableName')" min-width="140" />
@@ -194,10 +258,18 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage, ElMessageBox, type TableInstance } from 'element-plus';
 import { RefreshRight } from '@element-plus/icons-vue';
 import type { OrderSummary } from '@/api/orders';
-import { completeOrder, fetchOrders, updateOrderPaymentStatus, updateOrderStatus } from '@/api/orders';
+import {
+  completeOrder,
+  completeOrdersBatch,
+  fetchOrders,
+  updateOrderPaymentStatus,
+  updateOrderPaymentStatusBatch,
+  updateOrderStatus,
+  updateOrderStatusBatch,
+} from '@/api/orders';
 import type { StoreSummary } from '@/api/stores';
 import { fetchStores } from '@/api/stores';
 import PageShell from '@/components/PageShell.vue';
@@ -217,13 +289,19 @@ const authStore = useAuthStore();
 const loading = ref(false);
 const saving = ref(false);
 const completingOrder = ref(false);
+const batchSaving = ref(false);
+const batchCompleting = ref(false);
 const errorMessage = ref('');
 const orderRows = ref<OrderSummary[]>([]);
 const storeOptions = ref<StoreSummary[]>([]);
+const tableRef = ref<TableInstance>();
 const dialogVisible = ref(false);
 const currentRow = ref<OrderSummary | null>(null);
 const dialogOrderStatus = ref('');
 const dialogPaymentStatus = ref('');
+const selectedRows = ref<OrderSummary[]>([]);
+const batchOrderStatus = ref('');
+const batchPaymentStatus = ref('');
 
 const filters = reactive<OrderFilters>({
   status: '',
@@ -265,6 +343,8 @@ const filteredRows = computed(() =>
     );
   }),
 );
+const selectedCount = computed(() => selectedRows.value.length);
+const selectedOrderIds = computed(() => selectedRows.value.map((item) => item.id));
 
 function formatCurrency(valueInCent: number): string {
   return `¥ ${(valueInCent / 100).toFixed(2)}`;
@@ -313,6 +393,15 @@ function resetFilters() {
   loadOrders();
 }
 
+function clearSelection() {
+  tableRef.value?.clearSelection();
+  selectedRows.value = [];
+}
+
+function handleSelectionChange(rows: OrderSummary[]) {
+  selectedRows.value = rows;
+}
+
 function goToDetail(orderId: number) {
   router.push(`/orders/${orderId}`);
 }
@@ -334,6 +423,7 @@ async function loadOrders() {
       paymentStatus: filters.paymentStatus || undefined,
       keyword: filters.keyword || undefined,
     });
+    clearSelection();
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : t('common.requestFailed');
   } finally {
@@ -403,6 +493,77 @@ async function submitCompleteOrder(row: OrderSummary) {
     ElMessage.error(error instanceof Error ? error.message : t('common.requestFailed'));
   } finally {
     completingOrder.value = false;
+  }
+}
+
+function assertBatchSelected(): boolean {
+  if (selectedOrderIds.value.length > 0) {
+    return true;
+  }
+  ElMessage.warning(t('order.batch.emptySelection'));
+  return false;
+}
+
+async function submitBatchOrderStatus() {
+  if (!batchOrderStatus.value || !assertBatchSelected()) {
+    return;
+  }
+  batchSaving.value = true;
+  try {
+    await updateOrderStatusBatch({
+      orderIds: selectedOrderIds.value,
+      orderStatus: batchOrderStatus.value,
+    });
+    ElMessage.success(t('order.manage.updateSuccess'));
+    batchOrderStatus.value = '';
+    await loadOrders();
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : t('common.requestFailed'));
+  } finally {
+    batchSaving.value = false;
+  }
+}
+
+async function submitBatchPaymentStatus() {
+  if (!batchPaymentStatus.value || !assertBatchSelected()) {
+    return;
+  }
+  batchSaving.value = true;
+  try {
+    await updateOrderPaymentStatusBatch({
+      orderIds: selectedOrderIds.value,
+      paymentStatus: batchPaymentStatus.value,
+    });
+    ElMessage.success(t('order.manage.updateSuccess'));
+    batchPaymentStatus.value = '';
+    await loadOrders();
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : t('common.requestFailed'));
+  } finally {
+    batchSaving.value = false;
+  }
+}
+
+async function submitBatchCompleteOrders() {
+  if (!assertBatchSelected()) {
+    return;
+  }
+  try {
+    await ElMessageBox.confirm(t('order.batch.complete'), t('order.manage.title'), { type: 'warning' });
+  } catch {
+    return;
+  }
+  batchCompleting.value = true;
+  try {
+    await completeOrdersBatch({
+      orderIds: selectedOrderIds.value,
+    });
+    ElMessage.success(t('order.manage.updateSuccess'));
+    await loadOrders();
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : t('common.requestFailed'));
+  } finally {
+    batchCompleting.value = false;
   }
 }
 

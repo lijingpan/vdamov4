@@ -88,3 +88,9 @@ export async function updateRole(id: number, payload: RolePayload): Promise<Role
   });
   return toRoleSummary(raw);
 }
+
+export async function deleteRole(id: number): Promise<void> {
+  await request<void>(`/api/v1/roles/${id}`, {
+    method: 'DELETE',
+  });
+}

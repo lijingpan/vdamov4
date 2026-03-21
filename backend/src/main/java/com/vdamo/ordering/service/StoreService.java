@@ -11,6 +11,7 @@ import com.vdamo.ordering.mapper.SysUserStoreMapper;
 import com.vdamo.ordering.model.StoreStatusUpdateRequest;
 import com.vdamo.ordering.model.StoreSummary;
 import com.vdamo.ordering.model.StoreUpsertRequest;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,10 @@ import org.springframework.util.StringUtils;
 public class StoreService {
 
     private static final List<String> STORE_STATUSES = List.of("OPEN", "REST", "DISABLED");
+    private static final BigDecimal LATITUDE_MIN = new BigDecimal("-90");
+    private static final BigDecimal LATITUDE_MAX = new BigDecimal("90");
+    private static final BigDecimal LONGITUDE_MIN = new BigDecimal("-180");
+    private static final BigDecimal LONGITUDE_MAX = new BigDecimal("180");
 
     private final StoreMapper storeMapper;
     private final SysUserStoreMapper sysUserStoreMapper;
@@ -54,6 +59,8 @@ public class StoreService {
             wrapper.and(query -> query.like(StoreEntity::getName, keywordValue)
                     .or()
                     .like(StoreEntity::getCountryCode, keywordValue)
+                    .or()
+                    .like(StoreEntity::getAddress, keywordValue)
                     .or()
                     .like(StoreEntity::getId, keywordValue));
         }
@@ -99,12 +106,17 @@ public class StoreService {
     private void applyStoreValues(StoreEntity entity, StoreUpsertRequest request) {
         String name = request.name().trim();
         String countryCode = request.countryCode().trim().toUpperCase(Locale.ROOT);
+        String address = normalizeRequired(request.address(), "Store address is required");
+        BigDecimal latitude = request.latitude();
+        BigDecimal longitude = request.longitude();
         String status = normalizeStoreStatus(request.businessStatus());
         List<String> businessTypes = request.businessTypes().stream()
                 .filter(StringUtils::hasText)
                 .map(value -> value.trim().toUpperCase(Locale.ROOT))
                 .distinct()
                 .toList();
+        validateCoordinateRange(latitude, LATITUDE_MIN, LATITUDE_MAX, "latitude");
+        validateCoordinateRange(longitude, LONGITUDE_MIN, LONGITUDE_MAX, "longitude");
 
         if (businessTypes.isEmpty()) {
             throw new BadRequestException("At least one business type is required");
@@ -113,6 +125,9 @@ public class StoreService {
         validateStoreNameUnique(entity.getId(), name);
         entity.setName(name);
         entity.setCountryCode(countryCode);
+        entity.setAddress(address);
+        entity.setLatitude(latitude);
+        entity.setLongitude(longitude);
         entity.setStatus(status);
         entity.setBusinessModes(String.join(",", businessTypes));
         entity.setUpdater(permissionService.currentUser().username());
@@ -162,6 +177,22 @@ public class StoreService {
         return normalized;
     }
 
+    private void validateCoordinateRange(BigDecimal value, BigDecimal min, BigDecimal max, String fieldName) {
+        if (value == null) {
+            throw new BadRequestException("Store " + fieldName + " is required");
+        }
+        if (value.compareTo(min) < 0 || value.compareTo(max) > 0) {
+            throw new BadRequestException("Unsupported " + fieldName + " value");
+        }
+    }
+
+    private String normalizeRequired(String value, String message) {
+        if (!StringUtils.hasText(value)) {
+            throw new BadRequestException(message);
+        }
+        return value.trim();
+    }
+
     private StoreSummary toSummary(StoreEntity entity) {
         List<String> businessTypes = StringUtils.hasText(entity.getBusinessModes())
                 ? List.of(entity.getBusinessModes().split(","))
@@ -170,6 +201,9 @@ public class StoreService {
                 entity.getId(),
                 entity.getName(),
                 entity.getCountryCode(),
+                entity.getAddress(),
+                entity.getLatitude(),
+                entity.getLongitude(),
                 entity.getStatus(),
                 businessTypes);
     }

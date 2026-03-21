@@ -107,3 +107,9 @@ export async function updateUser(id: number, payload: UserPayload): Promise<User
   });
   return toUserSummary(raw);
 }
+
+export async function deleteUser(id: number): Promise<void> {
+  await request<void>(`/api/v1/users/${id}`, {
+    method: 'DELETE',
+  });
+}

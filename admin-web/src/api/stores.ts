@@ -9,6 +9,9 @@ export interface StoreSummary {
   id: number;
   name: string;
   countryCode: string;
+  address: string;
+  latitude?: number;
+  longitude?: number;
   businessStatus: string;
   businessTypes: string[];
 }
@@ -16,6 +19,9 @@ export interface StoreSummary {
 export interface StorePayload {
   name: string;
   countryCode: string;
+  address: string;
+  latitude: number;
+  longitude: number;
   businessStatus: string;
   businessTypes: string[];
 }
@@ -35,6 +41,19 @@ function asNumber(value: unknown): number {
   return typeof value === 'number' ? value : 0;
 }
 
+function asOptionalNumber(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return undefined;
+}
+
 function asStringList(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return [];
@@ -48,6 +67,9 @@ function toStoreSummary(item: unknown): StoreSummary {
     id: asNumber(source.id),
     name: asString(source.name),
     countryCode: asString(source.countryCode),
+    address: asString(source.address || source.storeAddress),
+    latitude: asOptionalNumber(source.latitude || source.lat),
+    longitude: asOptionalNumber(source.longitude || source.lng),
     businessStatus: asString(source.businessStatus || source.status),
     businessTypes: asStringList(source.businessTypes || source.businessModes),
   };

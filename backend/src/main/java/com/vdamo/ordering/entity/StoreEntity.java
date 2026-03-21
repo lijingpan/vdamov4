@@ -2,6 +2,7 @@ package com.vdamo.ordering.entity;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import java.math.BigDecimal;
 
 @TableName("da_store")
 public class StoreEntity extends BaseEntity {
@@ -10,6 +11,9 @@ public class StoreEntity extends BaseEntity {
     private Long id;
     private String name;
     private String countryCode;
+    private String address;
+    private BigDecimal latitude;
+    private BigDecimal longitude;
     private String status;
     private String businessModes;
 
@@ -35,6 +39,30 @@ public class StoreEntity extends BaseEntity {
 
     public void setCountryCode(String countryCode) {
         this.countryCode = countryCode;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public BigDecimal getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(BigDecimal latitude) {
+        this.latitude = latitude;
+    }
+
+    public BigDecimal getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(BigDecimal longitude) {
+        this.longitude = longitude;
     }
 
     public String getStatus() {

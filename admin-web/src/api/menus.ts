@@ -4,12 +4,15 @@ export interface MenuQuery {
   keyword?: string;
 }
 
+export type MenuType = 'MENU' | 'BUTTON';
+
 export interface MenuSummary {
   id: number;
   parentId: number | null;
   parentName: string;
   name: string;
   route: string;
+  menuType: MenuType;
   permissionCode: string;
   sortOrder: number;
 }
@@ -18,6 +21,7 @@ export interface MenuPayload {
   parentId?: number | null;
   name: string;
   route?: string;
+  menuType: MenuType;
   permissionCode: string;
   sortOrder: number;
 }
@@ -41,6 +45,10 @@ function asNullableNumber(value: unknown): number | null {
   return typeof value === 'number' ? value : null;
 }
 
+function asMenuType(value: unknown): MenuType {
+  return value === 'BUTTON' ? 'BUTTON' : 'MENU';
+}
+
 export async function fetchMenus(query?: MenuQuery): Promise<MenuSummary[]> {
   const raw = await request<unknown[]>(
     '/api/v1/menus',
@@ -58,6 +66,7 @@ function toMenuSummary(item: unknown): MenuSummary {
     parentName: asString(source.parentName),
     name: asString(source.name),
     route: asString(source.route),
+    menuType: asMenuType(source.menuType ?? source.type),
     permissionCode: asString(source.permissionCode),
     sortOrder: asNumber(source.sortOrder),
   };
@@ -77,4 +86,10 @@ export async function updateMenu(id: number, payload: MenuPayload): Promise<Menu
     body: JSON.stringify(payload),
   });
   return toMenuSummary(raw);
+}
+
+export async function deleteMenu(id: number): Promise<void> {
+  await request<void>(`/api/v1/menus/${id}`, {
+    method: 'DELETE',
+  });
 }

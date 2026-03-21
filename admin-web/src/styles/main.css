@@ -463,12 +463,46 @@ body,
 }
 
 .el-button--primary {
+  --el-button-text-color: #ffffff;
   --el-button-bg-color: var(--app-accent);
   --el-button-border-color: var(--app-accent);
+  --el-button-hover-text-color: #ffffff;
   --el-button-hover-bg-color: var(--app-accent-soft);
   --el-button-hover-border-color: var(--app-accent-soft);
+  --el-button-active-text-color: #ffffff;
   --el-button-active-bg-color: var(--app-accent-strong);
   --el-button-active-border-color: var(--app-accent-strong);
+}
+
+.el-button:not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(.is-link) {
+  --el-button-text-color: var(--app-text-strong);
+  --el-button-border-color: var(--app-border);
+  --el-button-hover-text-color: var(--app-accent);
+  --el-button-hover-border-color: rgba(31, 95, 209, 0.38);
+}
+
+.el-button--success {
+  --el-button-text-color: #ffffff;
+  --el-button-hover-text-color: #ffffff;
+  --el-button-active-text-color: #ffffff;
+}
+
+.el-button--warning {
+  --el-button-text-color: #ffffff;
+  --el-button-hover-text-color: #ffffff;
+  --el-button-active-text-color: #ffffff;
+}
+
+.el-button--danger {
+  --el-button-text-color: #ffffff;
+  --el-button-hover-text-color: #ffffff;
+  --el-button-active-text-color: #ffffff;
+}
+
+.el-button.is-link {
+  --el-button-text-color: var(--app-accent);
+  --el-button-hover-text-color: var(--app-accent-soft);
+  --el-button-active-text-color: var(--app-accent-strong);
 }
 
 .el-input__wrapper,

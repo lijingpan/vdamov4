@@ -57,8 +57,8 @@ public class SalesReportService {
         SalesReportResponse report = buildReport(storeId, startDate, endDate);
         StringBuilder builder = new StringBuilder(512);
         appendSummarySection(builder, report.summary());
-        appendStoreSection(builder, report.byStore());
-        appendDailySection(builder, report.byDate());
+        appendStoreSection(builder, report.storeRows());
+        appendDailySection(builder, report.dailyTrend());
         // Add UTF-8 BOM so CSV opens correctly in spreadsheet tools.
         return ("\uFEFF" + builder).getBytes(StandardCharsets.UTF_8);
     }
@@ -152,10 +152,10 @@ public class SalesReportService {
                 .append('\n');
         builder.append(summary.totalOrders()).append(',')
                 .append(summary.completedOrders()).append(',')
-                .append(summary.inProgressOrders()).append(',')
-                .append(summary.revenueInCent()).append(',')
-                .append(summary.paidInCent()).append(',')
-                .append(summary.discountInCent()).append(',')
+                .append(summary.activeOrders()).append(',')
+                .append(summary.grossAmountInCent()).append(',')
+                .append(summary.paidAmountInCent()).append(',')
+                .append(summary.discountAmountInCent()).append(',')
                 .append(summary.appendOrderCount()).append(',')
                 .append(summary.averageOrderAmountInCent()).append('\n')
                 .append('\n');
@@ -168,14 +168,14 @@ public class SalesReportService {
         for (SalesReportResponse.StoreRow row : storeRows) {
             builder.append(row.storeId()).append(',')
                     .append(csvEscape(row.storeName())).append(',')
-                    .append(row.totalOrders()).append(',')
-                    .append(row.completedOrders()).append(',')
-                    .append(row.inProgressOrders()).append(',')
-                    .append(row.revenueInCent()).append(',')
-                    .append(row.paidInCent()).append(',')
-                    .append(row.discountInCent()).append(',')
+                    .append(row.orderCount()).append(',')
+                    .append(row.completedOrderCount()).append(',')
+                    .append(row.activeOrderCount()).append(',')
+                    .append(row.grossAmountInCent()).append(',')
+                    .append(row.paidAmountInCent()).append(',')
+                    .append(row.discountAmountInCent()).append(',')
                     .append(row.appendOrderCount()).append(',')
-                    .append(row.totalOrders() == 0 ? 0 : row.revenueInCent() / row.totalOrders())
+                    .append(row.orderCount() == 0 ? 0 : row.grossAmountInCent() / row.orderCount())
                     .append('\n');
         }
         builder.append('\n');
@@ -186,12 +186,12 @@ public class SalesReportService {
         builder.append("date,totalOrders,completedOrders,inProgressOrders,revenueInCent,paidInCent")
                 .append('\n');
         for (SalesReportResponse.DailyTrendRow row : dailyRows) {
-            builder.append(csvEscape(row.date())).append(',')
-                    .append(row.totalOrders()).append(',')
-                    .append(row.completedOrders()).append(',')
-                    .append(row.inProgressOrders()).append(',')
-                    .append(row.revenueInCent()).append(',')
-                    .append(row.paidInCent())
+            builder.append(csvEscape(row.businessDate())).append(',')
+                    .append(row.orderCount()).append(',')
+                    .append(row.completedOrderCount()).append(',')
+                    .append(row.activeOrderCount()).append(',')
+                    .append(row.grossAmountInCent()).append(',')
+                    .append(row.paidAmountInCent())
                     .append('\n');
         }
     }

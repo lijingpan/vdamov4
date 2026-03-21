@@ -105,6 +105,17 @@ public class UserService {
         return toSummary(entity);
     }
 
+    public void delete(Long id) {
+        SysUserEntity entity = requireUser(id);
+        if (permissionService.currentUser().userId().equals(id)) {
+            throw new BadRequestException("Current user cannot be deleted");
+        }
+
+        sysUserRoleMapper.delete(new LambdaQueryWrapper<SysUserRoleEntity>().eq(SysUserRoleEntity::getUserId, id));
+        sysUserStoreMapper.delete(new LambdaQueryWrapper<SysUserStoreEntity>().eq(SysUserStoreEntity::getUserId, id));
+        sysUserMapper.deleteById(entity.getId());
+    }
+
     public SysUserEntity findByUsername(String username) {
         return sysUserMapper.selectOne(
                 new LambdaQueryWrapper<SysUserEntity>().eq(SysUserEntity::getUsername, username)
