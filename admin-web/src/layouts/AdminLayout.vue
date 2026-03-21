@@ -8,9 +8,7 @@
           <p>{{ t('app.subtitle') }}</p>
         </div>
       </div>
-      <div class="layout-header__center">
-        <span class="layout-header__section">{{ t(`menu.${activeLabel}`) }}</span>
-      </div>
+ 
       <div class="header-action">
         <span class="header-user">{{ currentUserName }}</span>
         <span class="header-divider" />
@@ -25,10 +23,7 @@
     </el-header>
     <el-container class="layout-body">
       <el-aside width="248px" class="layout-sidebar">
-        <div class="sidebar-panel">
-          <div class="sidebar-panel__title">{{ t(`menu.${activeLabel}`) }}</div>
-          <div class="sidebar-panel__subtitle">{{ t('app.subtitle') }}</div>
-        </div>
+ 
         <el-menu :default-active="activeMenu" class="side-menu" router>
           <el-menu-item v-for="item in visibleMenuItems" :key="item.key" :index="item.path" class="side-menu__item">
             <el-icon><component :is="item.icon" /></el-icon>
@@ -50,7 +45,7 @@ import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { useRouter } from 'vue-router';
-import { menuItemMap, menuItems } from '@/router/menu';
+import { menuItems } from '@/router/menu';
 import { useAuthStore } from '@/stores/auth';
 import { useLocaleStore, type AppLocale } from '@/stores/locale';
 
@@ -67,10 +62,6 @@ const activeMenu = computed(() => route.path);
 const visibleMenuItems = computed(() => {
   const allowed = new Set(authStore.allowedRoutes);
   return menuItems.filter((item) => allowed.has(item.path));
-});
-const activeLabel = computed(() => {
-  const target = menuItemMap[route.path];
-  return target ? target.key : 'dashboard';
 });
 const currentUserName = computed(() => authStore.user?.displayName ?? authStore.user?.username ?? '');
 

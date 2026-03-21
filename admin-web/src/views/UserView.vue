@@ -1,35 +1,72 @@
 <template>
   <PageShell :title="t('page.users.title')" :description="t('page.users.description')">
-    <div v-loading="loading">
-      <el-form :inline="true" class="filter-form">
+    <template #actions>
+      <el-button :icon="RefreshRight" @click="loadData">{{ t('common.refresh') }}</el-button>
+      <el-button v-if="canCreateUser" type="primary" :icon="Plus" @click="openCreateDialog">
+        {{ t('user.toolbar.add') }}
+      </el-button>
+    </template>
+
+    <template #meta>
+      <div class="stats-grid stats-grid--three">
+        <div class="stat-card">
+          <div class="stat-card__label">{{ t('user.summary.total') }}</div>
+          <div class="stat-card__value">{{ rows.length }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__label">{{ t('user.summary.enabled') }}</div>
+          <div class="stat-card__value">{{ enabledCount }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__label">{{ t('user.summary.disabled') }}</div>
+          <div class="stat-card__value">{{ disabledCount }}</div>
+        </div>
+      </div>
+    </template>
+
+    <el-card shadow="never" class="page-card filter-card">
+      <el-form :inline="true">
         <el-form-item :label="t('user.filter.store')">
-          <el-select v-model="storeId" clearable :placeholder="t('user.filter.storePlaceholder')">
-            <el-option
-              v-for="item in storeOptions"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            />
+          <el-select v-model="filters.storeId" clearable :placeholder="t('user.filter.storePlaceholder')">
+            <el-option v-for="item in storeOptions" :key="item.id" :label="item.name" :value="item.id" />
           </el-select>
         </el-form-item>
         <el-form-item :label="t('user.filter.status')">
-          <el-select v-model="enabledFilter" clearable :placeholder="t('user.filter.statusPlaceholder')">
+          <el-select v-model="filters.enabled" clearable :placeholder="t('user.filter.statusPlaceholder')">
             <el-option :label="t('dict.enableStatus.ENABLED')" :value="true" />
             <el-option :label="t('dict.enableStatus.DISABLED')" :value="false" />
           </el-select>
         </el-form-item>
         <el-form-item :label="t('user.filter.keyword')">
-          <el-input v-model="keyword" clearable :placeholder="t('user.filter.keywordPlaceholder')" />
+          <el-input
+            v-model="filters.keyword"
+            clearable
+            :placeholder="t('user.filter.keywordPlaceholder')"
+            @keyup.enter="loadUsers"
+          />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="loadUsers">{{ t('common.search') }}</el-button>
           <el-button @click="resetFilters">{{ t('common.reset') }}</el-button>
         </el-form-item>
       </el-form>
+    </el-card>
 
-      <el-alert v-if="errorMessage" :title="errorMessage" type="error" show-icon :closable="false" />
+    <el-card shadow="never" class="page-card data-card">
+      <div class="action-bar">
+        <div class="action-bar__hint">{{ t('page.users.description') }}</div>
+      </div>
 
-      <el-table :data="filteredRows" stripe border>
+      <el-alert
+        v-if="errorMessage"
+        :title="errorMessage"
+        type="error"
+        show-icon
+        :closable="false"
+        style="margin: 16px 0"
+      />
+
+      <el-table v-loading="loading" :data="tableRows" stripe>
         <el-table-column prop="username" :label="t('user.columns.username')" min-width="160" />
         <el-table-column prop="displayName" :label="t('user.columns.displayName')" min-width="160" />
         <el-table-column :label="t('user.columns.enabled')" min-width="120">
@@ -53,66 +90,217 @@
             </el-space>
           </template>
         </el-table-column>
+        <el-table-column v-if="canUpdateUser" :label="t('common.actions')" min-width="120" fixed="right">
+          <template #default="{ row }">
+            <div class="table-actions">
+              <el-button link type="primary" @click="openEditDialog(row)">{{ t('common.edit') }}</el-button>
+            </div>
+          </template>
+        </el-table-column>
       </el-table>
-    </div>
+    </el-card>
+
+    <el-dialog
+      v-model="dialogVisible"
+      :title="dialogMode === 'create' ? t('user.toolbar.add') : t('common.edit')"
+      width="620px"
+      destroy-on-close
+    >
+      <el-form ref="formRef" :model="form" :rules="rules" label-position="top" class="dialog-form">
+        <el-form-item :label="t('user.form.username')" prop="username">
+          <el-input v-model="form.username" maxlength="64" :placeholder="t('user.form.usernamePlaceholder')" />
+        </el-form-item>
+        <el-form-item :label="t('user.form.password')" prop="password">
+          <el-input
+            v-model="form.password"
+            show-password
+            maxlength="128"
+            :placeholder="dialogMode === 'create' ? t('user.form.passwordPlaceholder') : t('user.form.passwordPlaceholderOptional')"
+          />
+        </el-form-item>
+        <el-form-item :label="t('user.form.displayName')" prop="displayName">
+          <el-input v-model="form.displayName" maxlength="100" :placeholder="t('user.form.displayNamePlaceholder')" />
+        </el-form-item>
+        <el-form-item :label="t('user.form.enabled')" prop="enabled">
+          <el-switch v-model="form.enabled" />
+        </el-form-item>
+        <el-form-item :label="t('user.form.roleIds')" prop="roleIds">
+          <el-select v-model="form.roleIds" multiple filterable :placeholder="t('user.form.roleIdsPlaceholder')">
+            <el-option v-for="item in roleOptions" :key="item.id" :label="`${item.code} · ${item.name}`" :value="item.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item :label="t('user.form.storeIds')" prop="storeIds">
+          <el-select v-model="form.storeIds" multiple filterable :placeholder="t('user.form.storeIdsPlaceholder')">
+            <el-option v-for="item in storeOptions" :key="item.id" :label="item.name" :value="item.id" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitForm">{{ t('common.save') }}</el-button>
+      </template>
+    </el-dialog>
   </PageShell>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
+import { Plus, RefreshRight } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
-import type { StoreSummary } from '@/api/stores';
-import { fetchStores } from '@/api/stores';
-import type { UserSummary } from '@/api/users';
-import { fetchUsers } from '@/api/users';
+import { fetchRoles, type RoleSummary } from '@/api/roles';
+import { fetchStores, type StoreSummary } from '@/api/stores';
+import { createUser, fetchUsers, updateUser, type UserPayload, type UserSummary } from '@/api/users';
 import PageShell from '@/components/PageShell.vue';
+import { useAuthStore } from '@/stores/auth';
+
+interface UserFilters {
+  keyword: string;
+  enabled?: boolean;
+  storeId?: number;
+}
+
+interface UserFormModel {
+  id?: number;
+  username: string;
+  password: string;
+  displayName: string;
+  enabled: boolean;
+  roleIds: number[];
+  storeIds: number[];
+}
 
 const { t } = useI18n();
+const authStore = useAuthStore();
 
 const loading = ref(false);
+const submitting = ref(false);
 const errorMessage = ref('');
-const keyword = ref('');
-const enabledFilter = ref<boolean | undefined>();
-const storeId = ref<number | undefined>();
 const rows = ref<UserSummary[]>([]);
+const roleOptions = ref<RoleSummary[]>([]);
 const storeOptions = ref<StoreSummary[]>([]);
+const formRef = ref<FormInstance>();
+const dialogVisible = ref(false);
+const dialogMode = ref<'create' | 'edit'>('create');
+const filters = reactive<UserFilters>({
+  keyword: '',
+});
+const form = reactive<UserFormModel>({
+  username: '',
+  password: '',
+  displayName: '',
+  enabled: true,
+  roleIds: [],
+  storeIds: [],
+});
 
-const storeNameMap = computed(() =>
+const canCreateUser = computed(() => authStore.hasPermission('user:create'));
+const canUpdateUser = computed(() => authStore.hasPermission('user:update'));
+const enabledCount = computed(() => rows.value.filter((item) => item.enabled).length);
+const disabledCount = computed(() => rows.value.filter((item) => !item.enabled).length);
+const roleIdByCode = computed(() =>
+  roleOptions.value.reduce<Record<string, number>>((result, item) => {
+    result[item.code] = item.id;
+    return result;
+  }, {}),
+);
+const storeNameById = computed(() =>
   storeOptions.value.reduce<Record<number, string>>((result, item) => {
     result[item.id] = item.name;
     return result;
   }, {}),
 );
-
-const filteredRows = computed(() =>
-  rows.value
-    .map((item) => {
-      const fallbackNames = item.storeIds
-        .map((id) => storeNameMap.value[id])
-        .filter((name): name is string => Boolean(name));
-      return {
-        ...item,
-        storeNames: item.storeNames.length ? item.storeNames : fallbackNames,
-      };
-    })
-    .filter((item) => {
-      const matchEnabled = enabledFilter.value === undefined || item.enabled === enabledFilter.value;
-      const matchStore = !storeId.value || item.storeIds.includes(storeId.value);
-      const keywordValue = keyword.value.trim().toLowerCase();
-      const matchKeyword =
-        !keywordValue ||
-        item.username.toLowerCase().includes(keywordValue) ||
-        item.displayName.toLowerCase().includes(keywordValue) ||
-        item.roleCodes.some((role) => role.toLowerCase().includes(keywordValue)) ||
-        item.storeNames.some((storeName) => storeName.toLowerCase().includes(keywordValue));
-      return matchEnabled && matchStore && matchKeyword;
-    }),
+const tableRows = computed(() =>
+  rows.value.map((item) => {
+    const fallbackStoreNames = item.storeIds
+      .map((id) => storeNameById.value[id])
+      .filter((name): name is string => Boolean(name));
+    return {
+      ...item,
+      storeNames: item.storeNames.length ? item.storeNames : fallbackStoreNames,
+    };
+  }),
 );
 
+const rules = computed<FormRules<UserFormModel>>(() => ({
+  username: [{ required: true, message: t('user.form.usernamePlaceholder'), trigger: 'blur' }],
+  password:
+    dialogMode.value === 'create'
+      ? [{ required: true, message: t('user.form.passwordPlaceholder'), trigger: 'blur' }]
+      : [],
+  displayName: [{ required: true, message: t('user.form.displayNamePlaceholder'), trigger: 'blur' }],
+  roleIds: [{ type: 'array', required: true, min: 1, message: t('user.form.roleIdsPlaceholder'), trigger: 'change' }],
+  storeIds: [{ type: 'array', required: true, min: 1, message: t('user.form.storeIdsPlaceholder'), trigger: 'change' }],
+}));
+
 function resetFilters() {
-  keyword.value = '';
-  enabledFilter.value = undefined;
-  storeId.value = undefined;
+  filters.keyword = '';
+  filters.enabled = undefined;
+  filters.storeId = undefined;
+  loadUsers();
+}
+
+function resetForm() {
+  form.id = undefined;
+  form.username = '';
+  form.password = '';
+  form.displayName = '';
+  form.enabled = true;
+  form.roleIds = [];
+  form.storeIds = [];
+  formRef.value?.clearValidate();
+}
+
+function inferRoleIds(row: UserSummary): number[] {
+  if (row.roleIds.length > 0) {
+    return [...row.roleIds];
+  }
+  return row.roleCodes
+    .map((code) => roleIdByCode.value[code])
+    .filter((item): item is number => typeof item === 'number');
+}
+
+function openCreateDialog() {
+  dialogMode.value = 'create';
+  resetForm();
+  dialogVisible.value = true;
+}
+
+function openEditDialog(row: UserSummary) {
+  dialogMode.value = 'edit';
+  form.id = row.id;
+  form.username = row.username;
+  form.password = '';
+  form.displayName = row.displayName;
+  form.enabled = row.enabled;
+  form.roleIds = inferRoleIds(row);
+  form.storeIds = [...row.storeIds];
+  dialogVisible.value = true;
+}
+
+async function loadUsers() {
+  loading.value = true;
+  errorMessage.value = '';
+  try {
+    rows.value = await fetchUsers({
+      keyword: filters.keyword || undefined,
+      enabled: filters.enabled,
+      storeId: filters.storeId,
+    });
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : t('common.requestFailed');
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function loadRoles() {
+  try {
+    roleOptions.value = await fetchRoles();
+  } catch {
+    roleOptions.value = [];
+  }
 }
 
 async function loadStores() {
@@ -123,30 +311,46 @@ async function loadStores() {
   }
 }
 
-async function loadUsers() {
-  loading.value = true;
-  errorMessage.value = '';
+async function loadData() {
+  await Promise.all([loadRoles(), loadStores()]);
+  await loadUsers();
+}
+
+async function submitForm() {
+  const valid = await formRef.value?.validate().catch(() => false);
+  if (!valid) {
+    return;
+  }
+
+  const payload: UserPayload = {
+    username: form.username.trim(),
+    displayName: form.displayName.trim(),
+    enabled: form.enabled,
+    roleIds: [...new Set(form.roleIds)],
+    storeIds: [...new Set(form.storeIds)],
+  };
+  if (form.password.trim()) {
+    payload.password = form.password.trim();
+  }
+
+  submitting.value = true;
   try {
-    rows.value = await fetchUsers({
-      storeId: storeId.value,
-      enabled: enabledFilter.value,
-      keyword: keyword.value || undefined,
-    });
+    if (dialogMode.value === 'create') {
+      await createUser(payload);
+    } else if (form.id) {
+      await updateUser(form.id, payload);
+    }
+    dialogVisible.value = false;
+    ElMessage.success(t('common.save'));
+    await loadData();
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : t('common.requestFailed');
+    ElMessage.error(error instanceof Error ? error.message : t('common.requestFailed'));
   } finally {
-    loading.value = false;
+    submitting.value = false;
   }
 }
 
-onMounted(async () => {
-  await loadStores();
-  await loadUsers();
+onMounted(() => {
+  loadData();
 });
 </script>
-
-<style scoped>
-.filter-form {
-  margin-bottom: 12px;
-}
-</style>

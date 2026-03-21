@@ -5,6 +5,7 @@ import com.vdamo.ordering.common.i18n.MessageHelper;
 import com.vdamo.ordering.model.StoreStatusUpdateRequest;
 import com.vdamo.ordering.model.StoreSummary;
 import com.vdamo.ordering.model.StoreUpsertRequest;
+import com.vdamo.ordering.service.PermissionService;
 import com.vdamo.ordering.service.StoreService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -24,10 +25,16 @@ public class StoreController {
 
     private final MessageHelper messageHelper;
     private final StoreService storeService;
+    private final PermissionService permissionService;
 
-    public StoreController(MessageHelper messageHelper, StoreService storeService) {
+    public StoreController(
+            MessageHelper messageHelper,
+            StoreService storeService,
+            PermissionService permissionService
+    ) {
         this.messageHelper = messageHelper;
         this.storeService = storeService;
+        this.permissionService = permissionService;
     }
 
     @GetMapping
@@ -35,11 +42,13 @@ public class StoreController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String status
     ) {
+        permissionService.assertPermission("store:view");
         return ApiResponse.success(messageHelper.get("success.fetch"), storeService.list(keyword, status));
     }
 
     @PostMapping
     public ApiResponse<StoreSummary> create(@Valid @RequestBody StoreUpsertRequest request) {
+        permissionService.assertPermission("store:create");
         return ApiResponse.success(messageHelper.get("success.fetch"), storeService.create(request));
     }
 
@@ -48,6 +57,7 @@ public class StoreController {
             @PathVariable Long id,
             @Valid @RequestBody StoreUpsertRequest request
     ) {
+        permissionService.assertPermission("store:update");
         return ApiResponse.success(messageHelper.get("success.fetch"), storeService.update(id, request));
     }
 
@@ -56,6 +66,7 @@ public class StoreController {
             @PathVariable Long id,
             @Valid @RequestBody StoreStatusUpdateRequest request
     ) {
+        permissionService.assertPermission("store:status");
         return ApiResponse.success(messageHelper.get("success.fetch"), storeService.updateStatus(id, request));
     }
 }

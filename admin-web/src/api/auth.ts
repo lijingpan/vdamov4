@@ -6,6 +6,7 @@ export interface AuthenticatedUser {
   displayName: string;
   roleCodes: string[];
   storeIds: number[];
+  permissionCodes: string[];
 }
 
 export interface MenuSummary {

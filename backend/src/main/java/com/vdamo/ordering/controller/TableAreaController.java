@@ -5,6 +5,7 @@ import com.vdamo.ordering.common.i18n.MessageHelper;
 import com.vdamo.ordering.model.TableAreaEnabledUpdateRequest;
 import com.vdamo.ordering.model.TableAreaSummary;
 import com.vdamo.ordering.model.TableAreaUpsertRequest;
+import com.vdamo.ordering.service.PermissionService;
 import com.vdamo.ordering.service.TableAreaService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -24,10 +25,16 @@ public class TableAreaController {
 
     private final MessageHelper messageHelper;
     private final TableAreaService tableAreaService;
+    private final PermissionService permissionService;
 
-    public TableAreaController(MessageHelper messageHelper, TableAreaService tableAreaService) {
+    public TableAreaController(
+            MessageHelper messageHelper,
+            TableAreaService tableAreaService,
+            PermissionService permissionService
+    ) {
         this.messageHelper = messageHelper;
         this.tableAreaService = tableAreaService;
+        this.permissionService = permissionService;
     }
 
     @GetMapping
@@ -36,6 +43,7 @@ public class TableAreaController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Boolean enabled
     ) {
+        permissionService.assertPermission("table.area:view");
         return ApiResponse.success(
                 messageHelper.get("success.fetch"),
                 tableAreaService.list(storeId, keyword, enabled));
@@ -43,6 +51,7 @@ public class TableAreaController {
 
     @PostMapping
     public ApiResponse<TableAreaSummary> create(@Valid @RequestBody TableAreaUpsertRequest request) {
+        permissionService.assertPermission("table.area:create");
         return ApiResponse.success(messageHelper.get("success.fetch"), tableAreaService.create(request));
     }
 
@@ -51,6 +60,7 @@ public class TableAreaController {
             @PathVariable Long id,
             @Valid @RequestBody TableAreaUpsertRequest request
     ) {
+        permissionService.assertPermission("table.area:update");
         return ApiResponse.success(messageHelper.get("success.fetch"), tableAreaService.update(id, request));
     }
 
@@ -59,6 +69,7 @@ public class TableAreaController {
             @PathVariable Long id,
             @Valid @RequestBody TableAreaEnabledUpdateRequest request
     ) {
+        permissionService.assertPermission("table.area:enable");
         return ApiResponse.success(messageHelper.get("success.fetch"), tableAreaService.updateEnabled(id, request));
     }
 }

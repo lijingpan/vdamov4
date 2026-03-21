@@ -94,12 +94,12 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column :label="t('common.actions')" min-width="220" fixed="right">
+        <el-table-column v-if="canOperateStore" :label="t('common.actions')" min-width="220" fixed="right">
           <template #default="{ row }">
             <div class="table-actions">
-              <el-button link type="primary" @click="openEditDialog(row)">{{ t('common.edit') }}</el-button>
+              <el-button v-if="canUpdateStore" link type="primary" @click="openEditDialog(row)">{{ t('common.edit') }}</el-button>
               <el-button
-                v-if="row.businessStatus !== 'OPEN'"
+                v-if="canUpdateStoreStatus && row.businessStatus !== 'OPEN'"
                 link
                 type="success"
                 @click="changeStatus(row, 'OPEN')"
@@ -107,7 +107,7 @@
                 {{ t('store.actions.open') }}
               </el-button>
               <el-button
-                v-if="row.businessStatus === 'OPEN'"
+                v-if="canUpdateStoreStatus && row.businessStatus === 'OPEN'"
                 link
                 type="warning"
                 @click="changeStatus(row, 'REST')"
@@ -115,7 +115,7 @@
                 {{ t('store.actions.rest') }}
               </el-button>
               <el-button
-                v-if="row.businessStatus !== 'DISABLED'"
+                v-if="canUpdateStoreStatus && row.businessStatus !== 'DISABLED'"
                 link
                 type="danger"
                 @click="changeStatus(row, 'DISABLED')"
@@ -214,7 +214,10 @@ const form = reactive<StoreFormModel>({
 const storeStatuses = ['OPEN', 'REST', 'DISABLED'];
 const businessTypeOptions = ['DINE_IN', 'TAKEAWAY', 'DELIVERY'];
 
-const canCreateStore = computed(() => authStore.user?.roleCodes.includes('SUPER_ADMIN'));
+const canCreateStore = computed(() => authStore.hasPermission('store:create'));
+const canUpdateStore = computed(() => authStore.hasPermission('store:update'));
+const canUpdateStoreStatus = computed(() => authStore.hasPermission('store:status'));
+const canOperateStore = computed(() => canUpdateStore.value || canUpdateStoreStatus.value);
 const summary = computed(() => ({
   open: rows.value.filter((item) => item.businessStatus === 'OPEN').length,
   rest: rows.value.filter((item) => item.businessStatus === 'REST').length,
@@ -257,12 +260,18 @@ function resetForm() {
 }
 
 function openCreateDialog() {
+  if (!canCreateStore.value) {
+    return;
+  }
   dialogMode.value = 'create';
   resetForm();
   dialogVisible.value = true;
 }
 
 function openEditDialog(row: StoreSummary) {
+  if (!canUpdateStore.value) {
+    return;
+  }
   dialogMode.value = 'edit';
   form.id = row.id;
   form.name = row.name;
@@ -302,8 +311,14 @@ async function submitForm() {
       businessTypes: [...form.businessTypes],
     };
     if (dialogMode.value === 'create') {
+      if (!canCreateStore.value) {
+        return;
+      }
       await createStore(payload);
     } else if (form.id) {
+      if (!canUpdateStore.value) {
+        return;
+      }
       await updateStore(form.id, payload);
     }
     dialogVisible.value = false;
@@ -317,6 +332,9 @@ async function submitForm() {
 }
 
 async function changeStatus(row: StoreSummary, nextStatus: string) {
+  if (!canUpdateStoreStatus.value) {
+    return;
+  }
   try {
     await ElMessageBox.confirm(
       `${row.name} · ${t(`dict.storeStatus.${nextStatus}`)}`,

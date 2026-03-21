@@ -93,7 +93,22 @@ INSERT INTO da_menu (id, parent_id, name, route, permission_code, sort_order) VA
 (10, NULL, 'Member', '/members', 'member:view', 10),
 (11, NULL, 'Role', '/roles', 'role:view', 11),
 (12, NULL, 'User', '/users', 'user:view', 12),
-(13, NULL, 'Menu', '/menus', 'menu:view', 13);
+(13, NULL, 'Menu', '/menus', 'menu:view', 13),
+(1101, 11, 'Role Create', '', 'role:create', 111),
+(1102, 11, 'Role Update', '', 'role:update', 112),
+(1201, 12, 'User Create', '', 'user:create', 121),
+(1202, 12, 'User Update', '', 'user:update', 122),
+(1301, 13, 'Menu Create', '', 'menu:create', 131),
+(1302, 13, 'Menu Update', '', 'menu:update', 132),
+(1401, 2, 'Store Create', '', 'store:create', 21),
+(1402, 2, 'Store Update', '', 'store:update', 22),
+(1403, 2, 'Store Status', '', 'store:status', 23),
+(1501, 4, 'Table Area Create', '', 'table.area:create', 41),
+(1502, 4, 'Table Area Update', '', 'table.area:update', 42),
+(1503, 4, 'Table Area Enable', '', 'table.area:enable', 43),
+(1601, 3, 'Table Create', '', 'table:create', 31),
+(1602, 3, 'Table Update', '', 'table:update', 32),
+(1603, 3, 'Table Status', '', 'table:status', 33);
 
 INSERT INTO da_user_role (id, user_id, role_id) VALUES
 (1, 1, 1),
@@ -102,8 +117,15 @@ INSERT INTO da_user_role (id, user_id, role_id) VALUES
 INSERT INTO da_role_menu (id, role_id, menu_id) VALUES
 (1, 1, 1), (2, 1, 2), (3, 1, 3), (4, 1, 4), (5, 1, 5), (6, 1, 6), (7, 1, 7),
 (8, 1, 8), (9, 1, 9), (10, 1, 10), (11, 1, 11), (12, 1, 12), (13, 1, 13),
+(24, 1, 1101), (25, 1, 1102), (26, 1, 1201), (27, 1, 1202), (28, 1, 1301), (29, 1, 1302),
+(30, 1, 1401), (31, 1, 1402), (32, 1, 1403),
+(33, 1, 1501), (34, 1, 1502), (35, 1, 1503),
+(36, 1, 1601), (37, 1, 1602), (38, 1, 1603),
 (14, 2, 1), (15, 2, 2), (16, 2, 3), (17, 2, 4), (18, 2, 5), (19, 2, 6),
-(20, 2, 7), (21, 2, 8), (22, 2, 9), (23, 2, 10);
+(20, 2, 7), (21, 2, 8), (22, 2, 9), (23, 2, 10),
+(39, 2, 1402), (40, 2, 1403),
+(41, 2, 1501), (42, 2, 1502), (43, 2, 1503),
+(44, 2, 1601), (45, 2, 1602), (46, 2, 1603);
 
 INSERT INTO da_user_store (id, user_id, store_id) VALUES
 (1, 1, 2), (2, 1, 54), (3, 2, 54);

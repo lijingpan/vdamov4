@@ -7,6 +7,7 @@ public record UserSummary(
         String username,
         String displayName,
         boolean enabled,
+        List<Long> roleIds,
         List<String> roleCodes,
         List<Long> storeIds,
         List<String> storeNames

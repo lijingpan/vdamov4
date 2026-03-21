@@ -1,15 +1,19 @@
 package com.vdamo.ordering.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.vdamo.ordering.common.exception.BadRequestException;
+import com.vdamo.ordering.common.exception.NotFoundException;
+import com.vdamo.ordering.common.support.IdGenerator;
 import com.vdamo.ordering.entity.SysMenuEntity;
 import com.vdamo.ordering.entity.SysRoleEntity;
 import com.vdamo.ordering.entity.SysRoleMenuEntity;
 import com.vdamo.ordering.entity.SysUserRoleEntity;
+import com.vdamo.ordering.mapper.SysMenuMapper;
 import com.vdamo.ordering.mapper.SysRoleMapper;
 import com.vdamo.ordering.mapper.SysRoleMenuMapper;
-import com.vdamo.ordering.mapper.SysMenuMapper;
 import com.vdamo.ordering.mapper.SysUserRoleMapper;
 import com.vdamo.ordering.model.RoleSummary;
+import com.vdamo.ordering.model.RoleUpsertRequest;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -25,17 +29,23 @@ public class RoleService {
     private final SysRoleMenuMapper sysRoleMenuMapper;
     private final SysUserRoleMapper sysUserRoleMapper;
     private final SysMenuMapper sysMenuMapper;
+    private final PermissionService permissionService;
+    private final IdGenerator idGenerator;
 
     public RoleService(
             SysRoleMapper sysRoleMapper,
             SysRoleMenuMapper sysRoleMenuMapper,
             SysUserRoleMapper sysUserRoleMapper,
-            SysMenuMapper sysMenuMapper
+            SysMenuMapper sysMenuMapper,
+            PermissionService permissionService,
+            IdGenerator idGenerator
     ) {
         this.sysRoleMapper = sysRoleMapper;
         this.sysRoleMenuMapper = sysRoleMenuMapper;
         this.sysUserRoleMapper = sysUserRoleMapper;
         this.sysMenuMapper = sysMenuMapper;
+        this.permissionService = permissionService;
+        this.idGenerator = idGenerator;
     }
 
     public List<RoleSummary> listAll(String keyword) {
@@ -93,9 +103,27 @@ public class RoleService {
                             role.getName(),
                             roleMenuIds.size(),
                             userCount,
-                            permissionCodes);
+                            permissionCodes,
+                            roleMenuIds.stream().sorted().toList());
                 })
                 .toList();
+    }
+
+    public RoleSummary create(RoleUpsertRequest request) {
+        SysRoleEntity entity = new SysRoleEntity();
+        entity.setId(idGenerator.nextId());
+        applyRoleValues(entity, request);
+        sysRoleMapper.insert(entity);
+        syncRoleMenus(entity.getId(), request.menuIds());
+        return getSummary(entity.getId());
+    }
+
+    public RoleSummary update(Long id, RoleUpsertRequest request) {
+        SysRoleEntity entity = requireRole(id);
+        applyRoleValues(entity, request);
+        sysRoleMapper.updateById(entity);
+        syncRoleMenus(id, request.menuIds());
+        return getSummary(id);
     }
 
     public List<SysRoleEntity> listEntitiesByUserId(Long userId) {
@@ -109,5 +137,75 @@ public class RoleService {
             return List.of();
         }
         return sysRoleMapper.selectBatchIds(roleIds);
+    }
+
+    private RoleSummary getSummary(Long id) {
+        return listAll(null).stream()
+                .filter(item -> item.id().equals(id))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("Role not found"));
+    }
+
+    private void applyRoleValues(SysRoleEntity entity, RoleUpsertRequest request) {
+        String code = request.code().trim().toUpperCase();
+        String name = request.name().trim();
+        List<Long> menuIds = normalizeIds(request.menuIds());
+
+        validateRoleCodeUnique(entity.getId(), code);
+        validateMenuIds(menuIds);
+
+        entity.setCode(code);
+        entity.setName(name);
+        entity.setUpdater(permissionService.currentUser().username());
+    }
+
+    private void validateRoleCodeUnique(Long currentId, String code) {
+        List<SysRoleEntity> duplicates = sysRoleMapper.selectList(
+                new LambdaQueryWrapper<SysRoleEntity>().eq(SysRoleEntity::getCode, code));
+        boolean exists = duplicates.stream().anyMatch(item -> !item.getId().equals(currentId));
+        if (exists) {
+            throw new BadRequestException("Role code already exists");
+        }
+    }
+
+    private void validateMenuIds(List<Long> menuIds) {
+        if (menuIds.isEmpty()) {
+            throw new BadRequestException("At least one menu is required");
+        }
+        long existingCount = sysMenuMapper.selectBatchIds(menuIds).stream()
+                .filter(item -> item != null)
+                .count();
+        if (existingCount != menuIds.size()) {
+            throw new BadRequestException("Some menus do not exist");
+        }
+    }
+
+    private void syncRoleMenus(Long roleId, List<Long> menuIds) {
+        List<Long> normalizedMenuIds = normalizeIds(menuIds);
+        sysRoleMenuMapper.delete(new LambdaQueryWrapper<SysRoleMenuEntity>().eq(SysRoleMenuEntity::getRoleId, roleId));
+        String username = permissionService.currentUser().username();
+        normalizedMenuIds.forEach(menuId -> {
+            SysRoleMenuEntity entity = new SysRoleMenuEntity();
+            entity.setId(idGenerator.nextId());
+            entity.setRoleId(roleId);
+            entity.setMenuId(menuId);
+            entity.setUpdater(username);
+            sysRoleMenuMapper.insert(entity);
+        });
+    }
+
+    private SysRoleEntity requireRole(Long id) {
+        SysRoleEntity entity = sysRoleMapper.selectById(id);
+        if (entity == null) {
+            throw new NotFoundException("Role not found");
+        }
+        return entity;
+    }
+
+    private List<Long> normalizeIds(List<Long> ids) {
+        if (ids == null) {
+            return List.of();
+        }
+        return ids.stream().filter(item -> item != null).distinct().toList();
     }
 }

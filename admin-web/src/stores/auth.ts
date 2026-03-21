@@ -20,7 +20,16 @@ export const useAuthStore = defineStore('auth', () => {
   const initialized = ref(false);
 
   const isAuthenticated = computed(() => Boolean(token.value && user.value));
-  const allowedRoutes = computed(() => menus.value.map((item) => item.route));
+  const allowedRoutes = computed(() => menus.value.map((item) => item.route).filter((item) => Boolean(item)));
+  const permissionCodes = computed(() => {
+    const fromUser = user.value?.permissionCodes ?? [];
+    if (fromUser.length) {
+      return fromUser;
+    }
+    return menus.value
+      .map((item) => item.permissionCode)
+      .filter((item) => Boolean(item));
+  });
   const firstMenuPath = computed(() => menus.value[0]?.route ?? '/dashboard');
 
   function applySession(nextToken: string | null, nextUser: AuthenticatedUser | null, nextMenus: MenuSummary[]) {
@@ -79,6 +88,17 @@ export const useAuthStore = defineStore('auth', () => {
     return allowedRoutes.value.includes(path);
   }
 
+  function canAccessRoute(path: string): boolean {
+    return canAccess(path);
+  }
+
+  function hasPermission(permissionCode: string): boolean {
+    if (!permissionCode) {
+      return true;
+    }
+    return permissionCodes.value.includes(permissionCode);
+  }
+
   return {
     token,
     user,
@@ -86,11 +106,14 @@ export const useAuthStore = defineStore('auth', () => {
     initialized,
     isAuthenticated,
     allowedRoutes,
+    permissionCodes,
     firstMenuPath,
     bootstrap,
     login,
     logout,
     clearSession,
     canAccess,
+    canAccessRoute,
+    hasPermission,
   };
 });

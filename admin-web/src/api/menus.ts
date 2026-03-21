@@ -14,6 +14,14 @@ export interface MenuSummary {
   sortOrder: number;
 }
 
+export interface MenuPayload {
+  parentId?: number | null;
+  name: string;
+  route?: string;
+  permissionCode: string;
+  sortOrder: number;
+}
+
 function asRecord(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object') {
     return {};
@@ -39,16 +47,34 @@ export async function fetchMenus(query?: MenuQuery): Promise<MenuSummary[]> {
     undefined,
     query as Record<string, string | number | boolean | null | undefined>,
   );
-  return raw.map((item) => {
-    const source = asRecord(item);
-    return {
-      id: asNumber(source.id),
-      parentId: asNullableNumber(source.parentId),
-      parentName: asString(source.parentName),
-      name: asString(source.name),
-      route: asString(source.route),
-      permissionCode: asString(source.permissionCode),
-      sortOrder: asNumber(source.sortOrder),
-    };
+  return raw.map(toMenuSummary);
+}
+
+function toMenuSummary(item: unknown): MenuSummary {
+  const source = asRecord(item);
+  return {
+    id: asNumber(source.id),
+    parentId: asNullableNumber(source.parentId),
+    parentName: asString(source.parentName),
+    name: asString(source.name),
+    route: asString(source.route),
+    permissionCode: asString(source.permissionCode),
+    sortOrder: asNumber(source.sortOrder),
+  };
+}
+
+export async function createMenu(payload: MenuPayload): Promise<MenuSummary> {
+  const raw = await request<unknown>('/api/v1/menus', {
+    method: 'POST',
+    body: JSON.stringify(payload),
   });
+  return toMenuSummary(raw);
+}
+
+export async function updateMenu(id: number, payload: MenuPayload): Promise<MenuSummary> {
+  const raw = await request<unknown>(`/api/v1/menus/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+  return toMenuSummary(raw);
 }

@@ -7,7 +7,7 @@ public record AuthenticatedUser(
         String username,
         String displayName,
         List<String> roleCodes,
-        List<Long> storeIds
+        List<Long> storeIds,
+        List<String> permissionCodes
 ) {
 }
-

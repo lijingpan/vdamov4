@@ -2,7 +2,7 @@
   <PageShell :title="t('page.tableAreas.title')" :description="t('page.tableAreas.description')">
     <template #actions>
       <el-button :icon="RefreshRight" @click="loadRows">{{ t('common.refresh') }}</el-button>
-      <el-button type="primary" :icon="Plus" @click="openCreateDialog">
+      <el-button v-if="canCreateTableArea" type="primary" :icon="Plus" @click="openCreateDialog">
         {{ t('tableArea.toolbar.add') }}
       </el-button>
     </template>
@@ -79,12 +79,12 @@
           </template>
         </el-table-column>
         <el-table-column prop="tableCount" :label="t('tableArea.columns.tableCount')" min-width="120" />
-        <el-table-column :label="t('common.actions')" min-width="180" fixed="right">
+        <el-table-column v-if="canOperateTableArea" :label="t('common.actions')" min-width="180" fixed="right">
           <template #default="{ row }">
             <div class="table-actions">
-              <el-button link type="primary" @click="openEditDialog(row)">{{ t('common.edit') }}</el-button>
+              <el-button v-if="canUpdateTableArea" link type="primary" @click="openEditDialog(row)">{{ t('common.edit') }}</el-button>
               <el-button
-                v-if="!row.enabled"
+                v-if="canEnableTableArea && !row.enabled"
                 link
                 type="success"
                 @click="toggleEnabled(row, true)"
@@ -92,7 +92,7 @@
                 {{ t('tableArea.actions.enable') }}
               </el-button>
               <el-button
-                v-else
+                v-if="canEnableTableArea && row.enabled"
                 link
                 type="danger"
                 @click="toggleEnabled(row, false)"
@@ -154,6 +154,7 @@ import {
   type TableAreaSummary,
 } from '@/api/table-areas';
 import PageShell from '@/components/PageShell.vue';
+import { useAuthStore } from '@/stores/auth';
 
 interface Filters {
   storeId?: number;
@@ -171,6 +172,7 @@ interface AreaFormModel {
 }
 
 const { t } = useI18n();
+const authStore = useAuthStore();
 
 const loading = ref(false);
 const submitting = ref(false);
@@ -193,6 +195,10 @@ const form = reactive<AreaFormModel>({
 
 const enabledCount = computed(() => rows.value.filter((item) => item.enabled).length);
 const totalTableCount = computed(() => rows.value.reduce((sum, item) => sum + item.tableCount, 0));
+const canCreateTableArea = computed(() => authStore.hasPermission('table.area:create'));
+const canUpdateTableArea = computed(() => authStore.hasPermission('table.area:update'));
+const canEnableTableArea = computed(() => authStore.hasPermission('table.area:enable'));
+const canOperateTableArea = computed(() => canUpdateTableArea.value || canEnableTableArea.value);
 
 const rules: FormRules<AreaFormModel> = {
   storeId: [{ required: true, message: t('tableArea.form.storePlaceholder'), trigger: 'change' }],
@@ -219,12 +225,18 @@ function resetForm() {
 }
 
 function openCreateDialog() {
+  if (!canCreateTableArea.value) {
+    return;
+  }
   dialogMode.value = 'create';
   resetForm();
   dialogVisible.value = true;
 }
 
 function openEditDialog(row: TableAreaSummary) {
+  if (!canUpdateTableArea.value) {
+    return;
+  }
   dialogMode.value = 'edit';
   form.id = row.id;
   form.storeId = row.storeId;
@@ -275,8 +287,14 @@ async function submitForm() {
       enabled: form.enabled,
     };
     if (dialogMode.value === 'create') {
+      if (!canCreateTableArea.value) {
+        return;
+      }
       await createTableArea(payload);
     } else if (form.id) {
+      if (!canUpdateTableArea.value) {
+        return;
+      }
       await updateTableArea(form.id, payload);
     }
     dialogVisible.value = false;
@@ -290,6 +308,9 @@ async function submitForm() {
 }
 
 async function toggleEnabled(row: TableAreaSummary, enabled: boolean) {
+  if (!canEnableTableArea.value) {
+    return;
+  }
   try {
     await ElMessageBox.confirm(
       `${row.areaName} · ${enabled ? t('common.enable') : t('common.disable')}`,

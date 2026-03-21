@@ -36,14 +36,16 @@ public class AuthService {
         List<Long> roleIds = roles.stream().map(SysRoleEntity::getId).toList();
         List<String> roleCodes = roles.stream().map(SysRoleEntity::getCode).toList();
         List<Long> storeIds = userService.listStoreIds(user.getId());
-        List<MenuSummary> menus = menuService.listByRoleIds(roleIds);
+        List<String> permissionCodes = menuService.listPermissionCodesByRoleIds(roleIds);
+        List<MenuSummary> menus = menuService.listCurrentByRoleIds(roleIds);
 
         AuthenticatedUser authenticatedUser = new AuthenticatedUser(
                 user.getId(),
                 user.getUsername(),
                 user.getDisplayName(),
                 roleCodes,
-                storeIds
+                storeIds,
+                permissionCodes
         );
         String token = UUID.randomUUID().toString();
         tokenStore.put(token, authenticatedUser);

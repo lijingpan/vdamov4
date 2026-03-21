@@ -18,6 +18,15 @@ export interface ProductSummary {
   active: boolean;
 }
 
+export interface ProductPayload {
+  storeId: number;
+  name: string;
+  code: string;
+  categoryCode: string;
+  priceInCent: number;
+  active: boolean;
+}
+
 function asRecord(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object') {
     return {};
@@ -47,23 +56,49 @@ function asBoolean(value: unknown): boolean {
   return false;
 }
 
-export async function fetchProducts(query: ProductQuery): Promise<ProductSummary[]> {
+function toProductSummary(item: unknown): ProductSummary {
+  const source = asRecord(item);
+  return {
+    id: asNumber(source.id),
+    storeId: asNumber(source.storeId),
+    storeName: asString(source.storeName),
+    name: asString(source.name),
+    code: asString(source.code),
+    categoryCode: asString(source.categoryCode),
+    priceInCent: asNumber(source.priceInCent || source.price),
+    active: asBoolean(source.active || source.enabled || source.status),
+  };
+}
+
+export async function fetchProducts(query?: ProductQuery): Promise<ProductSummary[]> {
   const raw = await request<unknown[]>(
     '/api/v1/products',
     undefined,
     query as Record<string, string | number | boolean | null | undefined>,
   );
-  return raw.map((item) => {
-    const source = asRecord(item);
-    return {
-      id: asNumber(source.id),
-      storeId: asNumber(source.storeId),
-      storeName: asString(source.storeName),
-      name: asString(source.name),
-      code: asString(source.code),
-      categoryCode: asString(source.categoryCode),
-      priceInCent: asNumber(source.priceInCent || source.price),
-      active: asBoolean(source.active || source.enabled || source.status),
-    };
+  return raw.map(toProductSummary);
+}
+
+export async function createProduct(payload: ProductPayload): Promise<ProductSummary> {
+  const raw = await request<unknown>('/api/v1/products', {
+    method: 'POST',
+    body: JSON.stringify(payload),
   });
+  return toProductSummary(raw);
+}
+
+export async function updateProduct(id: number, payload: ProductPayload): Promise<ProductSummary> {
+  const raw = await request<unknown>(`/api/v1/products/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+  return toProductSummary(raw);
+}
+
+export async function updateProductStatus(id: number, active: boolean): Promise<ProductSummary> {
+  const raw = await request<unknown>(`/api/v1/products/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ active }),
+  });
+  return toProductSummary(raw);
 }

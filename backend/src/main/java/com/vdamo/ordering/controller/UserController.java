@@ -3,10 +3,16 @@ package com.vdamo.ordering.controller;
 import com.vdamo.ordering.common.api.ApiResponse;
 import com.vdamo.ordering.common.i18n.MessageHelper;
 import com.vdamo.ordering.model.UserSummary;
+import com.vdamo.ordering.model.UserUpsertRequest;
 import com.vdamo.ordering.service.PermissionService;
 import com.vdamo.ordering.service.UserService;
+import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,7 +41,22 @@ public class UserController {
             @RequestParam(required = false) Boolean enabled,
             @RequestParam(required = false) Long storeId
     ) {
-        permissionService.assertSuperAdmin();
+        permissionService.assertPermission("user:view");
         return ApiResponse.success(messageHelper.get("success.fetch"), userService.listAll(keyword, enabled, storeId));
+    }
+
+    @PostMapping
+    public ApiResponse<UserSummary> create(@Valid @RequestBody UserUpsertRequest request) {
+        permissionService.assertPermission("user:create");
+        return ApiResponse.success(messageHelper.get("success.fetch"), userService.create(request));
+    }
+
+    @PutMapping("/{id}")
+    public ApiResponse<UserSummary> update(
+            @PathVariable Long id,
+            @Valid @RequestBody UserUpsertRequest request
+    ) {
+        permissionService.assertPermission("user:update");
+        return ApiResponse.success(messageHelper.get("success.fetch"), userService.update(id, request));
     }
 }

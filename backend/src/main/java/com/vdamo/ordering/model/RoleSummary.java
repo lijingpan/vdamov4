@@ -8,6 +8,7 @@ public record RoleSummary(
         String name,
         int menuCount,
         int userCount,
-        List<String> permissionCodes
+        List<String> permissionCodes,
+        List<Long> menuIds
 ) {
 }

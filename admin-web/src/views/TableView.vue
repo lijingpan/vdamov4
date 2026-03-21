@@ -2,7 +2,7 @@
   <PageShell :title="t('page.tables.title')" :description="t('page.tables.description')">
     <template #actions>
       <el-button :icon="RefreshRight" @click="loadRows">{{ t('common.refresh') }}</el-button>
-      <el-button type="primary" :icon="Plus" @click="openCreateDialog">
+      <el-button v-if="canCreateTable" type="primary" :icon="Plus" @click="openCreateDialog">
         {{ t('table.toolbar.add') }}
       </el-button>
     </template>
@@ -90,12 +90,12 @@
             {{ formatCurrency(row.currentAmountInCent) }}
           </template>
         </el-table-column>
-        <el-table-column :label="t('common.actions')" min-width="220" fixed="right">
+        <el-table-column v-if="canOperateTable" :label="t('common.actions')" min-width="220" fixed="right">
           <template #default="{ row }">
             <div class="table-actions">
-              <el-button link type="primary" @click="openEditDialog(row)">{{ t('common.edit') }}</el-button>
+              <el-button v-if="canUpdateTable" link type="primary" @click="openEditDialog(row)">{{ t('common.edit') }}</el-button>
               <el-button
-                v-if="row.status !== 'IDLE' && row.status !== 'DISABLED'"
+                v-if="canUpdateTableStatus && row.status !== 'IDLE' && row.status !== 'DISABLED'"
                 link
                 type="success"
                 @click="changeStatus(row, 'IDLE')"
@@ -103,7 +103,7 @@
                 {{ t('table.actions.markIdle') }}
               </el-button>
               <el-button
-                v-if="row.status === 'DISABLED'"
+                v-if="canUpdateTableStatus && row.status === 'DISABLED'"
                 link
                 type="success"
                 @click="changeStatus(row, 'IDLE')"
@@ -111,7 +111,7 @@
                 {{ t('table.actions.enable') }}
               </el-button>
               <el-button
-                v-else
+                v-if="canUpdateTableStatus && row.status !== 'DISABLED'"
                 link
                 type="danger"
                 @click="changeStatus(row, 'DISABLED')"
@@ -181,6 +181,7 @@ import {
   type TableSummary,
 } from '@/api/tables';
 import PageShell from '@/components/PageShell.vue';
+import { useAuthStore } from '@/stores/auth';
 
 interface Filters {
   storeId?: number;
@@ -198,6 +199,7 @@ interface TableFormModel {
 }
 
 const { t } = useI18n();
+const authStore = useAuthStore();
 
 const loading = ref(false);
 const submitting = ref(false);
@@ -224,6 +226,10 @@ const statusOptions = ['IDLE', 'IN_USE', 'WAITING_CHECKOUT', 'WAITING_CLEAN', 'D
 const activeCount = computed(() => rows.value.filter((item) => item.status === 'IN_USE').length);
 const waitingCheckoutCount = computed(() => rows.value.filter((item) => item.status === 'WAITING_CHECKOUT').length);
 const disabledCount = computed(() => rows.value.filter((item) => item.status === 'DISABLED').length);
+const canCreateTable = computed(() => authStore.hasPermission('table:create'));
+const canUpdateTable = computed(() => authStore.hasPermission('table:update'));
+const canUpdateTableStatus = computed(() => authStore.hasPermission('table:status'));
+const canOperateTable = computed(() => canUpdateTable.value || canUpdateTableStatus.value);
 
 const rules: FormRules<TableFormModel> = {
   storeId: [{ required: true, message: t('table.form.storePlaceholder'), trigger: 'change' }],
@@ -284,6 +290,9 @@ function resetForm() {
 }
 
 async function openCreateDialog() {
+  if (!canCreateTable.value) {
+    return;
+  }
   dialogMode.value = 'create';
   resetForm();
   if (form.storeId) {
@@ -294,6 +303,9 @@ async function openCreateDialog() {
 }
 
 async function openEditDialog(row: TableSummary) {
+  if (!canUpdateTable.value) {
+    return;
+  }
   dialogMode.value = 'edit';
   form.id = row.id;
   form.storeId = row.storeId;
@@ -352,8 +364,14 @@ async function submitForm() {
       status: form.status,
     };
     if (dialogMode.value === 'create') {
+      if (!canCreateTable.value) {
+        return;
+      }
       await createTable(payload);
     } else if (form.id) {
+      if (!canUpdateTable.value) {
+        return;
+      }
       await updateTable(form.id, payload);
     }
     dialogVisible.value = false;
@@ -367,6 +385,9 @@ async function submitForm() {
 }
 
 async function changeStatus(row: TableSummary, nextStatus: string) {
+  if (!canUpdateTableStatus.value) {
+    return;
+  }
   try {
     await ElMessageBox.confirm(
       `${row.tableName} · ${t(`dict.tableStatus.${nextStatus}`)}`,

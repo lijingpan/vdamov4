@@ -4,6 +4,7 @@ import com.vdamo.ordering.common.api.ApiResponse;
 import com.vdamo.ordering.common.i18n.MessageHelper;
 import com.vdamo.ordering.model.MemberSummary;
 import com.vdamo.ordering.service.MemberService;
+import com.vdamo.ordering.service.PermissionService;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import org.springframework.validation.annotation.Validated;
@@ -19,10 +20,16 @@ public class MemberController {
 
     private final MessageHelper messageHelper;
     private final MemberService memberService;
+    private final PermissionService permissionService;
 
-    public MemberController(MessageHelper messageHelper, MemberService memberService) {
+    public MemberController(
+            MessageHelper messageHelper,
+            MemberService memberService,
+            PermissionService permissionService
+    ) {
         this.messageHelper = messageHelper;
         this.memberService = memberService;
+        this.permissionService = permissionService;
     }
 
     @GetMapping
@@ -32,6 +39,7 @@ public class MemberController {
             @RequestParam(required = false) String levelCode,
             @RequestParam(required = false) String keyword
     ) {
+        permissionService.assertPermission("member:view");
         return ApiResponse.success(
                 messageHelper.get("success.fetch"),
                 memberService.list(storeId, countryCode, levelCode, keyword));

@@ -11,9 +11,19 @@ export interface UserSummary {
   username: string;
   displayName: string;
   enabled: boolean;
+  roleIds: number[];
   roleCodes: string[];
   storeIds: number[];
   storeNames: string[];
+}
+
+export interface UserPayload {
+  username: string;
+  password?: string;
+  displayName: string;
+  enabled: boolean;
+  roleIds: number[];
+  storeIds: number[];
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -59,22 +69,41 @@ function asNumberList(value: unknown): number[] {
   return value.filter((item): item is number => typeof item === 'number');
 }
 
+function toUserSummary(item: unknown): UserSummary {
+  const source = asRecord(item);
+  return {
+    id: asNumber(source.id),
+    username: asString(source.username),
+    displayName: asString(source.displayName || source.name),
+    enabled: asBoolean(source.enabled || source.status),
+    roleIds: asNumberList(source.roleIds),
+    roleCodes: asStringList(source.roleCodes),
+    storeIds: asNumberList(source.storeIds),
+    storeNames: asStringList(source.storeNames),
+  };
+}
+
 export async function fetchUsers(query?: UserQuery): Promise<UserSummary[]> {
   const raw = await request<unknown[]>(
     '/api/v1/users',
     undefined,
     query as Record<string, string | number | boolean | null | undefined>,
   );
-  return raw.map((item) => {
-    const source = asRecord(item);
-    return {
-      id: asNumber(source.id),
-      username: asString(source.username),
-      displayName: asString(source.displayName || source.name),
-      enabled: asBoolean(source.enabled || source.status),
-      roleCodes: asStringList(source.roleCodes),
-      storeIds: asNumberList(source.storeIds),
-      storeNames: asStringList(source.storeNames),
-    };
+  return raw.map(toUserSummary);
+}
+
+export async function createUser(payload: UserPayload): Promise<UserSummary> {
+  const raw = await request<unknown>('/api/v1/users', {
+    method: 'POST',
+    body: JSON.stringify(payload),
   });
+  return toUserSummary(raw);
+}
+
+export async function updateUser(id: number, payload: UserPayload): Promise<UserSummary> {
+  const raw = await request<unknown>(`/api/v1/users/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+  return toUserSummary(raw);
 }

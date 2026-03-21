@@ -6,6 +6,7 @@ import com.vdamo.ordering.common.security.UserContext;
 import com.vdamo.ordering.model.AuthenticatedUser;
 import java.util.List;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 public class PermissionService {
@@ -22,9 +23,27 @@ public class PermissionService {
         return currentUser().storeIds();
     }
 
+    public List<String> currentPermissionCodes() {
+        return currentUser().permissionCodes();
+    }
+
     public void assertSuperAdmin() {
         if (!currentUser().roleCodes().contains("SUPER_ADMIN")) {
             throw new ForbiddenException("Super admin permission required");
+        }
+    }
+
+    public boolean hasPermission(String permissionCode) {
+        if (!StringUtils.hasText(permissionCode)) {
+            return true;
+        }
+        AuthenticatedUser user = currentUser();
+        return user.roleCodes().contains("SUPER_ADMIN") || user.permissionCodes().contains(permissionCode);
+    }
+
+    public void assertPermission(String permissionCode) {
+        if (!hasPermission(permissionCode)) {
+            throw new ForbiddenException("Permission denied: " + permissionCode);
         }
     }
 
