@@ -108,7 +108,22 @@ INSERT INTO da_menu (id, parent_id, name, route, permission_code, sort_order) VA
 (1503, 4, 'Table Area Enable', '', 'table.area:enable', 43),
 (1601, 3, 'Table Create', '', 'table:create', 31),
 (1602, 3, 'Table Update', '', 'table:update', 32),
-(1603, 3, 'Table Status', '', 'table:status', 33);
+(1603, 3, 'Table Status', '', 'table:status', 33),
+(1701, 8, 'Product Create', '', 'product:create', 81),
+(1702, 8, 'Product Update', '', 'product:update', 82),
+(1703, 8, 'Product Status', '', 'product:status', 83),
+(1801, 9, 'Product Category Create', '', 'product.category:create', 91),
+(1802, 9, 'Product Category Update', '', 'product.category:update', 92),
+(1803, 9, 'Product Category Enable', '', 'product.category:enable', 93),
+(1901, 7, 'Device Create', '', 'device:create', 71),
+(1902, 7, 'Device Update', '', 'device:update', 72),
+(1903, 7, 'Device Enable', '', 'device:enable', 73),
+(1951, 5, 'Order Update Status', '', 'order:update-status', 51),
+(1952, 5, 'Order Update Payment', '', 'order:update-payment', 52),
+(1953, 5, 'Order Complete', '', 'order:complete', 53),
+(2101, 6, 'Sales Report Export', '', 'sales.report:export', 61),
+(2001, 10, 'Member Create', '', 'member:create', 101),
+(2002, 10, 'Member Update', '', 'member:update', 102);
 
 INSERT INTO da_user_role (id, user_id, role_id) VALUES
 (1, 1, 1),
@@ -121,11 +136,23 @@ INSERT INTO da_role_menu (id, role_id, menu_id) VALUES
 (30, 1, 1401), (31, 1, 1402), (32, 1, 1403),
 (33, 1, 1501), (34, 1, 1502), (35, 1, 1503),
 (36, 1, 1601), (37, 1, 1602), (38, 1, 1603),
+(47, 1, 1701), (48, 1, 1702), (49, 1, 1703),
+(50, 1, 1801), (51, 1, 1802), (52, 1, 1803),
+(59, 1, 1901), (60, 1, 1902), (61, 1, 1903),
+(69, 1, 1951), (70, 1, 1952), (71, 1, 1953),
+(75, 1, 2101),
+(62, 1, 2001), (63, 1, 2002),
 (14, 2, 1), (15, 2, 2), (16, 2, 3), (17, 2, 4), (18, 2, 5), (19, 2, 6),
 (20, 2, 7), (21, 2, 8), (22, 2, 9), (23, 2, 10),
 (39, 2, 1402), (40, 2, 1403),
 (41, 2, 1501), (42, 2, 1502), (43, 2, 1503),
-(44, 2, 1601), (45, 2, 1602), (46, 2, 1603);
+(44, 2, 1601), (45, 2, 1602), (46, 2, 1603),
+(53, 2, 1701), (54, 2, 1702), (55, 2, 1703),
+(56, 2, 1801), (57, 2, 1802), (58, 2, 1803),
+(64, 2, 1901), (65, 2, 1902), (66, 2, 1903),
+(72, 2, 1951), (73, 2, 1952), (74, 2, 1953),
+(76, 2, 2101),
+(67, 2, 2001), (68, 2, 2002);
 
 INSERT INTO da_user_store (id, user_id, store_id) VALUES
 (1, 1, 2), (2, 1, 54), (3, 2, 54);

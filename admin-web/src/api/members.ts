@@ -18,6 +18,15 @@ export interface MemberSummary {
   phoneE164: string;
 }
 
+export interface MemberPayload {
+  storeId: number;
+  levelCode: string;
+  displayName: string;
+  countryCode: string;
+  phoneNational: string;
+  phoneE164: string;
+}
+
 function asRecord(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object') {
     return {};
@@ -39,17 +48,35 @@ export async function fetchMembers(query: MemberQuery): Promise<MemberSummary[]>
     undefined,
     query as Record<string, string | number | boolean | null | undefined>,
   );
-  return raw.map((item) => {
-    const source = asRecord(item);
-    return {
-      id: asNumber(source.id),
-      storeId: asNumber(source.storeId),
-      storeName: asString(source.storeName),
-      levelCode: asString(source.levelCode),
-      displayName: asString(source.displayName || source.name),
-      countryCode: asString(source.countryCode),
-      phoneNational: asString(source.phoneNational),
-      phoneE164: asString(source.phoneE164),
-    };
+  return raw.map(toMemberSummary);
+}
+
+function toMemberSummary(item: unknown): MemberSummary {
+  const source = asRecord(item);
+  return {
+    id: asNumber(source.id),
+    storeId: asNumber(source.storeId),
+    storeName: asString(source.storeName),
+    levelCode: asString(source.levelCode),
+    displayName: asString(source.displayName || source.name),
+    countryCode: asString(source.countryCode),
+    phoneNational: asString(source.phoneNational),
+    phoneE164: asString(source.phoneE164),
+  };
+}
+
+export async function createMember(payload: MemberPayload): Promise<MemberSummary> {
+  const raw = await request<unknown>('/api/v1/members', {
+    method: 'POST',
+    body: JSON.stringify(payload),
   });
+  return toMemberSummary(raw);
+}
+
+export async function updateMember(id: number, payload: MemberPayload): Promise<MemberSummary> {
+  const raw = await request<unknown>(`/api/v1/members/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+  return toMemberSummary(raw);
 }

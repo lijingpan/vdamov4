@@ -10,7 +10,9 @@
       </div>
     </header>
     <div v-if="$slots.meta" class="page-shell__meta">
-      <slot name="meta" />
+      <div class="page-shell__meta-inner">
+        <slot name="meta" />
+      </div>
     </div>
     <div class="page-shell__content">
       <slot />

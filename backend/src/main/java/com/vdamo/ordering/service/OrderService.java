@@ -1,6 +1,7 @@
 package com.vdamo.ordering.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.vdamo.ordering.common.exception.BadRequestException;
 import com.vdamo.ordering.common.exception.NotFoundException;
 import com.vdamo.ordering.common.i18n.MessageHelper;
 import com.vdamo.ordering.entity.MemberEntity;
@@ -18,16 +19,49 @@ import com.vdamo.ordering.mapper.PaymentRecordMapper;
 import com.vdamo.ordering.mapper.StoreMapper;
 import com.vdamo.ordering.mapper.TableMapper;
 import com.vdamo.ordering.model.OrderDetailResponse;
+import com.vdamo.ordering.model.OrderPaymentStatusUpdateRequest;
+import com.vdamo.ordering.model.OrderStatusUpdateRequest;
 import com.vdamo.ordering.model.OrderSummary;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 @Service
 public class OrderService {
+
+    private static final Set<String> ORDER_STATUSES = Set.of(
+            "PENDING_CONFIRM",
+            "PENDING",
+            "PLACED",
+            "CONFIRMED",
+            "IN_PROGRESS",
+            "COOKING",
+            "SERVED",
+            "WAITING_CHECKOUT",
+            "COMPLETED",
+            "CANCELLED",
+            "REFUNDED"
+    );
+    private static final Set<String> OPEN_ORDER_STATUSES = Set.of(
+            "PENDING_CONFIRM",
+            "PENDING",
+            "PLACED",
+            "CONFIRMED",
+            "IN_PROGRESS",
+            "COOKING",
+            "SERVED"
+    );
+    private static final Set<String> PAYMENT_STATUSES = Set.of(
+            "UNPAID",
+            "PARTIAL",
+            "PAID",
+            "REFUNDED"
+    );
 
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
@@ -124,10 +158,7 @@ public class OrderService {
     }
 
     public OrderDetailResponse getDetail(Long orderId) {
-        OrderEntity order = orderMapper.selectById(orderId);
-        if (order == null) {
-            throw new NotFoundException(messageHelper.get("error.order.notFound"));
-        }
+        OrderEntity order = requireOrder(orderId);
         permissionService.assertStoreAccess(order.getStoreId());
 
         StoreEntity store = storeMapper.selectById(order.getStoreId());
@@ -243,6 +274,55 @@ public class OrderService {
                         paymentRecordAmount));
     }
 
+    public OrderDetailResponse updateOrderStatus(Long orderId, OrderStatusUpdateRequest request) {
+        OrderEntity order = requireOrder(orderId);
+        permissionService.assertStoreAccess(order.getStoreId());
+
+        String targetStatus = normalizeOrderStatus(request.orderStatus());
+        if ("COMPLETED".equals(targetStatus) && !"PAID".equals(order.getPaymentStatus())) {
+            throw new BadRequestException("Order must be paid before marking completed");
+        }
+
+        order.setOrderStatus(targetStatus);
+        order.setUpdater(permissionService.currentUser().username());
+        orderMapper.updateById(order);
+        syncTableStatusForOrder(order, targetStatus);
+        return getDetail(orderId);
+    }
+
+    public OrderDetailResponse updatePaymentStatus(Long orderId, OrderPaymentStatusUpdateRequest request) {
+        OrderEntity order = requireOrder(orderId);
+        permissionService.assertStoreAccess(order.getStoreId());
+
+        String targetPaymentStatus = normalizePaymentStatus(request.paymentStatus());
+        order.setPaymentStatus(targetPaymentStatus);
+        if ("PAID".equals(targetPaymentStatus)) {
+            order.setPaidAmountInCent(defaultInt(order.getPayableAmountInCent()));
+        } else if ("UNPAID".equals(targetPaymentStatus) || "REFUNDED".equals(targetPaymentStatus)) {
+            order.setPaidAmountInCent(0);
+        } else {
+            order.setPaidAmountInCent(Math.min(defaultInt(order.getPaidAmountInCent()), defaultInt(order.getPayableAmountInCent())));
+        }
+        order.setUpdater(permissionService.currentUser().username());
+        orderMapper.updateById(order);
+        return getDetail(orderId);
+    }
+
+    public OrderDetailResponse completeOrder(Long orderId) {
+        OrderEntity order = requireOrder(orderId);
+        permissionService.assertStoreAccess(order.getStoreId());
+        if (!"PAID".equals(order.getPaymentStatus())) {
+            throw new BadRequestException("Order must be PAID before completion");
+        }
+
+        order.setOrderStatus("COMPLETED");
+        order.setPaidAmountInCent(defaultInt(order.getPayableAmountInCent()));
+        order.setUpdater(permissionService.currentUser().username());
+        orderMapper.updateById(order);
+        syncTableStatusForOrder(order, "COMPLETED");
+        return getDetail(orderId);
+    }
+
     private OrderSummary toSummary(
             OrderEntity entity,
             Map<Long, String> storeNameMap,
@@ -271,6 +351,57 @@ public class OrderService {
 
     private int defaultInt(Integer value) {
         return value == null ? 0 : value;
+    }
+
+    private String normalizeOrderStatus(String value) {
+        String normalized = value.trim().toUpperCase(Locale.ROOT);
+        if (!ORDER_STATUSES.contains(normalized)) {
+            throw new BadRequestException("Unsupported order status");
+        }
+        return normalized;
+    }
+
+    private String normalizePaymentStatus(String value) {
+        String normalized = value.trim().toUpperCase(Locale.ROOT);
+        if (!PAYMENT_STATUSES.contains(normalized)) {
+            throw new BadRequestException("Unsupported payment status");
+        }
+        return normalized;
+    }
+
+    private void syncTableStatusForOrder(OrderEntity order, String targetOrderStatus) {
+        TableEntity table = tableMapper.selectById(order.getTableId());
+        if (table == null || "DISABLED".equals(table.getStatus())) {
+            return;
+        }
+        String nextTableStatus = resolveTableStatus(targetOrderStatus);
+        if (!StringUtils.hasText(nextTableStatus) || nextTableStatus.equals(table.getStatus())) {
+            return;
+        }
+        table.setStatus(nextTableStatus);
+        table.setUpdater(permissionService.currentUser().username());
+        tableMapper.updateById(table);
+    }
+
+    private String resolveTableStatus(String orderStatus) {
+        if ("WAITING_CHECKOUT".equals(orderStatus)) {
+            return "WAITING_CHECKOUT";
+        }
+        if ("COMPLETED".equals(orderStatus) || "CANCELLED".equals(orderStatus) || "REFUNDED".equals(orderStatus)) {
+            return "IDLE";
+        }
+        if (OPEN_ORDER_STATUSES.contains(orderStatus)) {
+            return "IN_USE";
+        }
+        return null;
+    }
+
+    private OrderEntity requireOrder(Long orderId) {
+        OrderEntity order = orderMapper.selectById(orderId);
+        if (order == null) {
+            throw new NotFoundException(messageHelper.get("error.order.notFound"));
+        }
+        return order;
     }
 
     private Long parseOrderId(String keyword) {

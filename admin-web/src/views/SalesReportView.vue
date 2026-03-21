@@ -1,5 +1,18 @@
 <template>
   <PageShell :title="t('page.salesReports.title')" :description="t('page.salesReports.description')">
+    <template #actions>
+      <el-button :icon="RefreshRight" @click="loadReport">{{ t('common.refresh') }}</el-button>
+      <el-button
+        v-if="canExportSalesReport"
+        type="primary"
+        :icon="Download"
+        :loading="exporting"
+        @click="handleExport"
+      >
+        {{ t('common.export') }}
+      </el-button>
+    </template>
+
     <div v-loading="loading">
       <el-form :inline="true" class="filter-form">
         <el-form-item :label="t('salesReport.filter.store')">
@@ -155,19 +168,24 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
+import { ElMessage } from 'element-plus';
+import { Download, RefreshRight } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
 import type { SalesByDate, SalesByStore, SalesSummary } from '@/api/sales-reports';
-import { fetchSalesReport } from '@/api/sales-reports';
+import { exportSalesReport, fetchSalesReport } from '@/api/sales-reports';
 import type { StoreSummary } from '@/api/stores';
 import { fetchStores } from '@/api/stores';
 import PageShell from '@/components/PageShell.vue';
+import { useAuthStore } from '@/stores/auth';
 
 type DateRangeModel = [string, string] | [];
 
 const { t } = useI18n();
+const authStore = useAuthStore();
 
 const loading = ref(false);
+const exporting = ref(false);
 const errorMessage = ref('');
 const storeId = ref<number | undefined>();
 const dateRange = ref<DateRangeModel>([]);
@@ -184,6 +202,7 @@ const summary = ref<SalesSummary>({
 });
 const storeRows = ref<SalesByStore[]>([]);
 const dateRows = ref<SalesByDate[]>([]);
+const canExportSalesReport = computed(() => authStore.hasPermission('sales.report:export'));
 
 function formatCurrency(valueInCent: number): string {
   return `¥ ${(valueInCent / 100).toFixed(2)}`;
@@ -192,6 +211,15 @@ function formatCurrency(valueInCent: number): string {
 function resetFilters() {
   storeId.value = undefined;
   dateRange.value = [];
+}
+
+function buildQuery() {
+  const [startDate, endDate] = dateRange.value.length === 2 ? dateRange.value : [undefined, undefined];
+  return {
+    storeId: storeId.value,
+    startDate,
+    endDate,
+  };
 }
 
 async function loadStores() {
@@ -206,12 +234,7 @@ async function loadReport() {
   loading.value = true;
   errorMessage.value = '';
   try {
-    const [startDate, endDate] = dateRange.value.length === 2 ? dateRange.value : [undefined, undefined];
-    const response = await fetchSalesReport({
-      storeId: storeId.value,
-      startDate,
-      endDate,
-    });
+    const response = await fetchSalesReport(buildQuery());
     summary.value = response.summary;
     storeRows.value = response.byStore;
     dateRows.value = response.byDate;
@@ -219,6 +242,20 @@ async function loadReport() {
     errorMessage.value = error instanceof Error ? error.message : t('common.requestFailed');
   } finally {
     loading.value = false;
+  }
+}
+
+async function handleExport() {
+  if (!canExportSalesReport.value) {
+    return;
+  }
+  exporting.value = true;
+  try {
+    await exportSalesReport(buildQuery());
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : t('common.requestFailed'));
+  } finally {
+    exporting.value = false;
   }
 }
 

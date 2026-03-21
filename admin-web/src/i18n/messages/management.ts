@@ -1,12 +1,54 @@
 const sharedManagementMessages = {
+  dict: {
+    orderStatus: {
+      PENDING: 'Pending',
+      CONFIRMED: 'Confirmed',
+    },
+    paymentStatus: {
+      UNPAID: 'Unpaid',
+      PARTIAL: 'Partial',
+      PAID: 'Paid',
+      REFUNDED: 'Refunded',
+    },
+  },
   common: {
     add: 'Add',
     edit: 'Edit',
     save: 'Save',
     cancel: 'Cancel',
+    export: 'Export',
     actions: 'Actions',
     enable: 'Enable',
     disable: 'Disable',
+  },
+  order: {
+    filter: {
+      paymentStatus: 'Payment Status',
+      paymentStatusPlaceholder: 'All payment statuses',
+    },
+    manage: {
+      title: 'Order Operations',
+      orderStatus: 'Order Status',
+      paymentStatus: 'Payment Status',
+      saveOrderStatus: 'Update Order Status',
+      savePaymentStatus: 'Update Payment Status',
+      complete: 'Complete Order',
+      updateSuccess: 'Order updated successfully',
+    },
+    batch: {
+      selectedCount: '{count} selected',
+      orderStatusPlaceholder: 'Select order status',
+      paymentStatusPlaceholder: 'Select payment status',
+      updateOrderStatus: 'Batch Update Order Status',
+      updatePaymentStatus: 'Batch Update Payment Status',
+      complete: 'Batch Complete',
+      clearSelection: 'Clear Selection',
+      emptySelection: 'Please select orders first',
+    },
+    actions: {
+      manage: 'Edit',
+      complete: 'Complete',
+    },
   },
   store: {
     summary: {
@@ -124,6 +166,53 @@ const sharedManagementMessages = {
       categoryCodePlaceholder: 'Enter category code',
       sortOrder: 'Sort Order',
       enabled: 'Enabled',
+    },
+  },
+  device: {
+    toolbar: {
+      add: 'Add Device',
+    },
+    actions: {
+      enable: 'Enable Device',
+      disable: 'Disable Device',
+    },
+    form: {
+      store: 'Store',
+      storePlaceholder: 'Select store',
+      name: 'Device Name',
+      namePlaceholder: 'Enter device name',
+      type: 'Device Type',
+      typePlaceholder: 'Select device type',
+      purpose: 'Device Purpose',
+      purposePlaceholder: 'Select purpose',
+      brand: 'Brand',
+      brandPlaceholder: 'Enter brand',
+      sn: 'SN',
+      snPlaceholder: 'Enter serial number',
+      size: 'Size',
+      sizePlaceholder: 'Enter size',
+      onlineStatus: 'Online Status',
+      onlineStatusPlaceholder: 'Select online status',
+      enabled: 'Enabled',
+    },
+  },
+  member: {
+    toolbar: {
+      add: 'Add Member',
+    },
+    form: {
+      store: 'Store',
+      storePlaceholder: 'Select store',
+      levelCode: 'Member Level',
+      levelCodePlaceholder: 'Enter member level',
+      displayName: 'Member Name',
+      displayNamePlaceholder: 'Enter member name',
+      countryCode: 'Country Code',
+      countryCodePlaceholder: 'Enter country code',
+      phoneNational: 'National Phone',
+      phoneNationalPlaceholder: 'Enter national phone',
+      phoneE164: 'International Phone',
+      phoneE164Placeholder: 'Enter international phone',
     },
   },
   menuManage: {

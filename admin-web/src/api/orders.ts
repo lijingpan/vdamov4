@@ -3,6 +3,7 @@ import { request } from '@/api/http';
 export interface OrderQuery {
   storeId?: number;
   status?: string;
+  paymentStatus?: string;
   keyword?: string;
 }
 
@@ -185,6 +186,7 @@ export async function fetchOrders(query: OrderQuery): Promise<OrderSummary[]> {
       storeId: query.storeId,
       keyword: query.keyword,
       orderStatus: query.status,
+      paymentStatus: query.paymentStatus,
     },
   );
   return raw.map((item) => {
@@ -209,4 +211,65 @@ export async function fetchOrders(query: OrderQuery): Promise<OrderSummary[]> {
 export async function fetchOrderDetail(orderId: number): Promise<OrderDetail> {
   const raw = await request<unknown>(`/api/v1/orders/${orderId}`);
   return mapOrderDetail(raw);
+}
+
+export interface OrderStatusUpdatePayload {
+  orderStatus: string;
+}
+
+export interface OrderPaymentStatusUpdatePayload {
+  paymentStatus: string;
+}
+
+export interface BatchOrderStatusUpdatePayload extends OrderStatusUpdatePayload {
+  orderIds: number[];
+}
+
+export interface BatchOrderPaymentStatusUpdatePayload extends OrderPaymentStatusUpdatePayload {
+  orderIds: number[];
+}
+
+export interface BatchOrderCompletePayload {
+  orderIds: number[];
+}
+
+export async function updateOrderStatus(orderId: number, payload: OrderStatusUpdatePayload): Promise<void> {
+  await request<unknown>(`/api/v1/orders/${orderId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateOrderPaymentStatus(orderId: number, payload: OrderPaymentStatusUpdatePayload): Promise<void> {
+  await request<unknown>(`/api/v1/orders/${orderId}/payment-status`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateOrderStatusBatch(payload: BatchOrderStatusUpdatePayload): Promise<void> {
+  await request<unknown>('/api/v1/orders/status', {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateOrderPaymentStatusBatch(payload: BatchOrderPaymentStatusUpdatePayload): Promise<void> {
+  await request<unknown>('/api/v1/orders/payment-status', {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function completeOrder(orderId: number): Promise<void> {
+  await request<unknown>(`/api/v1/orders/${orderId}/complete`, {
+    method: 'PATCH',
+  });
+}
+
+export async function completeOrdersBatch(payload: BatchOrderCompletePayload): Promise<void> {
+  await request<unknown>('/api/v1/orders/complete', {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
 }

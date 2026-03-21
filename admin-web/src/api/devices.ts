@@ -21,6 +21,18 @@ export interface DeviceSummary {
   enabled: boolean;
 }
 
+export interface DevicePayload {
+  storeId: number;
+  name: string;
+  type: string;
+  purpose: string;
+  brand: string;
+  sn: string;
+  size: string;
+  onlineStatus: string;
+  enabled: boolean;
+}
+
 function asRecord(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object') {
     return {};
@@ -56,20 +68,46 @@ export async function fetchDevices(query: DeviceQuery): Promise<DeviceSummary[]>
     undefined,
     query as Record<string, string | number | boolean | null | undefined>,
   );
-  return raw.map((item) => {
-    const source = asRecord(item);
-    return {
-      id: asNumber(source.id),
-      storeId: asNumber(source.storeId),
-      storeName: asString(source.storeName),
-      name: asString(source.name),
-      type: asString(source.type || source.deviceType),
-      purpose: asString(source.purpose),
-      brand: asString(source.brand),
-      sn: asString(source.sn || source.serialNo),
-      size: asString(source.size),
-      onlineStatus: asString(source.onlineStatus),
-      enabled: asBoolean(source.enabled || source.isEnabled || source.status),
-    };
+  return raw.map(toDeviceSummary);
+}
+
+function toDeviceSummary(item: unknown): DeviceSummary {
+  const source = asRecord(item);
+  return {
+    id: asNumber(source.id),
+    storeId: asNumber(source.storeId),
+    storeName: asString(source.storeName),
+    name: asString(source.name),
+    type: asString(source.type || source.deviceType),
+    purpose: asString(source.purpose),
+    brand: asString(source.brand),
+    sn: asString(source.sn || source.serialNo),
+    size: asString(source.size),
+    onlineStatus: asString(source.onlineStatus),
+    enabled: asBoolean(source.enabled || source.isEnabled || source.status),
+  };
+}
+
+export async function createDevice(payload: DevicePayload): Promise<DeviceSummary> {
+  const raw = await request<unknown>('/api/v1/devices', {
+    method: 'POST',
+    body: JSON.stringify(payload),
   });
+  return toDeviceSummary(raw);
+}
+
+export async function updateDevice(id: number, payload: DevicePayload): Promise<DeviceSummary> {
+  const raw = await request<unknown>(`/api/v1/devices/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+  return toDeviceSummary(raw);
+}
+
+export async function updateDeviceEnabled(id: number, enabled: boolean): Promise<DeviceSummary> {
+  const raw = await request<unknown>(`/api/v1/devices/${id}/enabled`, {
+    method: 'PATCH',
+    body: JSON.stringify({ enabled }),
+  });
+  return toDeviceSummary(raw);
 }

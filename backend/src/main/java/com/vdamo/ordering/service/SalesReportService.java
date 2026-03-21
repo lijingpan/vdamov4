@@ -6,20 +6,24 @@ import com.vdamo.ordering.entity.StoreEntity;
 import com.vdamo.ordering.mapper.OrderMapper;
 import com.vdamo.ordering.mapper.StoreMapper;
 import com.vdamo.ordering.model.SalesReportResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.TreeMap;
 import org.springframework.stereotype.Service;
 
 @Service
 public class SalesReportService {
 
+    private static final DateTimeFormatter EXPORT_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
     private static final Set<String> OPEN_ORDER_STATUS = Set.of(
             "PENDING",
             "CONFIRMED",
@@ -44,6 +48,32 @@ public class SalesReportService {
     }
 
     public SalesReportResponse getReport(Long storeId, LocalDate startDate, LocalDate endDate) {
+        permissionService.assertPermission("sales.report:view");
+        return buildReport(storeId, startDate, endDate);
+    }
+
+    public byte[] exportReportCsv(Long storeId, LocalDate startDate, LocalDate endDate) {
+        permissionService.assertPermission("sales.report:export");
+        SalesReportResponse report = buildReport(storeId, startDate, endDate);
+        StringBuilder builder = new StringBuilder(512);
+        appendSummarySection(builder, report.summary());
+        appendStoreSection(builder, report.byStore());
+        appendDailySection(builder, report.byDate());
+        // Add UTF-8 BOM so CSV opens correctly in spreadsheet tools.
+        return ("\uFEFF" + builder).getBytes(StandardCharsets.UTF_8);
+    }
+
+    public String buildExportFileName(LocalDate startDate, LocalDate endDate) {
+        String range = "all";
+        if (startDate != null || endDate != null) {
+            String from = startDate == null ? "start" : startDate.toString();
+            String to = endDate == null ? "end" : endDate.toString();
+            range = from + "_to_" + to;
+        }
+        return "sales-report-" + range + "-" + LocalDateTime.now().format(EXPORT_TIMESTAMP_FORMAT) + ".csv";
+    }
+
+    private SalesReportResponse buildReport(Long storeId, LocalDate startDate, LocalDate endDate) {
         List<Long> storeScope = permissionService.currentStoreIds();
         if (storeId != null) {
             permissionService.assertStoreAccess(storeId);
@@ -114,6 +144,70 @@ public class SalesReportService {
                 storeRows,
                 dailyTrend
         );
+    }
+
+    private void appendSummarySection(StringBuilder builder, SalesReportResponse.Summary summary) {
+        builder.append("Summary").append('\n');
+        builder.append("totalOrders,completedOrders,inProgressOrders,revenueInCent,paidInCent,discountInCent,appendOrderCount,averageOrderAmountInCent")
+                .append('\n');
+        builder.append(summary.totalOrders()).append(',')
+                .append(summary.completedOrders()).append(',')
+                .append(summary.inProgressOrders()).append(',')
+                .append(summary.revenueInCent()).append(',')
+                .append(summary.paidInCent()).append(',')
+                .append(summary.discountInCent()).append(',')
+                .append(summary.appendOrderCount()).append(',')
+                .append(summary.averageOrderAmountInCent()).append('\n')
+                .append('\n');
+    }
+
+    private void appendStoreSection(StringBuilder builder, List<SalesReportResponse.StoreRow> storeRows) {
+        builder.append("By Store").append('\n');
+        builder.append("storeId,storeName,totalOrders,completedOrders,inProgressOrders,revenueInCent,paidInCent,discountInCent,appendOrderCount,averageOrderAmountInCent")
+                .append('\n');
+        for (SalesReportResponse.StoreRow row : storeRows) {
+            builder.append(row.storeId()).append(',')
+                    .append(csvEscape(row.storeName())).append(',')
+                    .append(row.totalOrders()).append(',')
+                    .append(row.completedOrders()).append(',')
+                    .append(row.inProgressOrders()).append(',')
+                    .append(row.revenueInCent()).append(',')
+                    .append(row.paidInCent()).append(',')
+                    .append(row.discountInCent()).append(',')
+                    .append(row.appendOrderCount()).append(',')
+                    .append(row.totalOrders() == 0 ? 0 : row.revenueInCent() / row.totalOrders())
+                    .append('\n');
+        }
+        builder.append('\n');
+    }
+
+    private void appendDailySection(StringBuilder builder, List<SalesReportResponse.DailyTrendRow> dailyRows) {
+        builder.append("By Date").append('\n');
+        builder.append("date,totalOrders,completedOrders,inProgressOrders,revenueInCent,paidInCent")
+                .append('\n');
+        for (SalesReportResponse.DailyTrendRow row : dailyRows) {
+            builder.append(csvEscape(row.date())).append(',')
+                    .append(row.totalOrders()).append(',')
+                    .append(row.completedOrders()).append(',')
+                    .append(row.inProgressOrders()).append(',')
+                    .append(row.revenueInCent()).append(',')
+                    .append(row.paidInCent())
+                    .append('\n');
+        }
+    }
+
+    private String csvEscape(String value) {
+        if (value == null) {
+            return "";
+        }
+        boolean needsQuote = value.contains(",") || value.contains("\"") || value.contains("\n") || value.contains("\r");
+        String escaped = value.replace("\"", "\"\"");
+        if (!needsQuote) {
+            return escaped;
+        }
+        StringJoiner joiner = new StringJoiner("", "\"", "\"");
+        joiner.add(escaped);
+        return joiner.toString();
     }
 
     private Map<Long, SummaryCounter> initStoreCounterMap(List<Long> storeIds) {

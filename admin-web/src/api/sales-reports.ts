@@ -1,4 +1,4 @@
-import { request } from '@/api/http';
+import { downloadFile, request } from '@/api/http';
 
 export interface SalesReportQuery {
   storeId?: number;
@@ -128,4 +128,14 @@ export async function fetchSalesReport(query: SalesReportQuery): Promise<SalesRe
       mapByDate(item),
     ),
   };
+}
+
+export async function exportSalesReport(query: SalesReportQuery): Promise<void> {
+  await downloadFile(
+    '/api/v1/reports/sales/export',
+    query as Record<string, string | number | boolean | null | undefined>,
+    {
+      fileName: 'sales-report.csv',
+    },
+  );
 }

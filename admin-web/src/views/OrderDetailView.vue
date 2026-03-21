@@ -32,7 +32,7 @@
                   </el-tag>
                 </el-descriptions-item>
                 <el-descriptions-item :label="t('order.detail.fields.paymentStatus')">
-                  {{ detail.paymentStatus || '-' }}
+                  {{ paymentStatusLabel(detail.paymentStatus) }}
                 </el-descriptions-item>
                 <el-descriptions-item :label="t('order.detail.fields.appendOrder')">
                   {{ detail.isAppendOrder ? t('common.yes') : t('common.no') }}
@@ -65,6 +65,69 @@
             </el-card>
           </el-col>
         </el-row>
+
+        <el-card v-if="canManageOrder" shadow="never" class="section-row">
+          <template #header>
+            <span>{{ t('order.manage.title') }}</span>
+          </template>
+          <el-row :gutter="12">
+            <el-col :xs="24" :lg="12">
+              <el-form label-position="top">
+                <el-form-item :label="t('order.manage.orderStatus')">
+                  <el-select v-model="nextOrderStatus" :disabled="!canUpdateOrderStatus">
+                    <el-option
+                      v-for="item in orderStatusOptions"
+                      :key="item"
+                      :label="t(`dict.orderStatus.${item}`)"
+                      :value="item"
+                    />
+                  </el-select>
+                </el-form-item>
+                <el-button
+                  v-if="canUpdateOrderStatus"
+                  type="primary"
+                  :loading="savingOrderStatus"
+                  :disabled="!nextOrderStatus || nextOrderStatus === detail.orderStatus"
+                  @click="submitOrderStatus"
+                >
+                  {{ t('order.manage.saveOrderStatus') }}
+                </el-button>
+                <el-button
+                  v-if="canCompleteOrder"
+                  type="success"
+                  :loading="completingOrder"
+                  :disabled="detail.orderStatus === 'COMPLETED' || detail.paymentStatus !== 'PAID'"
+                  @click="submitCompleteOrder"
+                >
+                  {{ t('order.manage.complete') }}
+                </el-button>
+              </el-form>
+            </el-col>
+            <el-col :xs="24" :lg="12">
+              <el-form label-position="top">
+                <el-form-item :label="t('order.manage.paymentStatus')">
+                  <el-select v-model="nextPaymentStatus" :disabled="!canUpdatePaymentStatus">
+                    <el-option
+                      v-for="item in paymentStatusOptions"
+                      :key="item"
+                      :label="t(`dict.paymentStatus.${item}`)"
+                      :value="item"
+                    />
+                  </el-select>
+                </el-form-item>
+                <el-button
+                  v-if="canUpdatePaymentStatus"
+                  type="primary"
+                  :loading="savingPaymentStatus"
+                  :disabled="!nextPaymentStatus || nextPaymentStatus === detail.paymentStatus"
+                  @click="submitPaymentStatus"
+                >
+                  {{ t('order.manage.savePaymentStatus') }}
+                </el-button>
+              </el-form>
+            </el-col>
+          </el-row>
+        </el-card>
 
         <el-card shadow="never" class="section-row">
           <template #header>
@@ -121,7 +184,11 @@
               prop="paymentStatus"
               :label="t('order.detail.payment.columns.paymentStatus')"
               min-width="140"
-            />
+            >
+              <template #default="{ row }">
+                {{ paymentStatusLabel(row.paymentStatus) }}
+              </template>
+            </el-table-column>
             <el-table-column :label="t('order.detail.payment.columns.amount')" min-width="140">
               <template #default="{ row }">
                 {{ formatCurrency(row.amountInCent) }}
@@ -150,19 +217,49 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
+import { ElMessage } from 'element-plus';
 import type { OrderDetail } from '@/api/orders';
-import { fetchOrderDetail } from '@/api/orders';
+import { completeOrder, fetchOrderDetail, updateOrderPaymentStatus, updateOrderStatus } from '@/api/orders';
 import PageShell from '@/components/PageShell.vue';
+import { useAuthStore } from '@/stores/auth';
 
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
+const authStore = useAuthStore();
 
 const loading = ref(false);
 const errorMessage = ref('');
 const detail = ref<OrderDetail | null>(null);
+const savingOrderStatus = ref(false);
+const savingPaymentStatus = ref(false);
+const completingOrder = ref(false);
+const nextOrderStatus = ref('');
+const nextPaymentStatus = ref('');
 
 const orderId = computed(() => Number(route.params.id));
+const canUpdateOrderStatus = computed(
+  () => authStore.hasPermission('order:update-status') || authStore.hasPermission('order:update'),
+);
+const canUpdatePaymentStatus = computed(
+  () => authStore.hasPermission('order:update-payment') || authStore.hasPermission('order:update'),
+);
+const canCompleteOrder = computed(() => authStore.hasPermission('order:complete'));
+const canManageOrder = computed(
+  () => canUpdateOrderStatus.value || canUpdatePaymentStatus.value || canCompleteOrder.value,
+);
+const orderStatusOptions = [
+  'PENDING_CONFIRM',
+  'PLACED',
+  'IN_PROGRESS',
+  'COOKING',
+  'SERVED',
+  'WAITING_CHECKOUT',
+  'COMPLETED',
+  'CANCELLED',
+  'REFUNDED',
+];
+const paymentStatusOptions = ['UNPAID', 'PARTIAL', 'PAID', 'REFUNDED'];
 
 function formatCurrency(valueInCent: number): string {
   return `¥ ${(valueInCent / 100).toFixed(2)}`;
@@ -181,6 +278,15 @@ function statusType(status: string): 'success' | 'warning' | 'danger' | 'info' {
   return 'info';
 }
 
+function paymentStatusLabel(status: string): string {
+  if (!status) {
+    return '-';
+  }
+  const key = `dict.paymentStatus.${status}`;
+  const label = t(key);
+  return label === key ? status : label;
+}
+
 function goBack() {
   router.push('/orders');
 }
@@ -195,10 +301,60 @@ async function loadDetail() {
   errorMessage.value = '';
   try {
     detail.value = await fetchOrderDetail(orderId.value);
+    nextOrderStatus.value = detail.value.orderStatus || '';
+    nextPaymentStatus.value = detail.value.paymentStatus || '';
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : t('common.requestFailed');
   } finally {
     loading.value = false;
+  }
+}
+
+async function submitOrderStatus() {
+  if (!detail.value || !nextOrderStatus.value || nextOrderStatus.value === detail.value.orderStatus) {
+    return;
+  }
+  savingOrderStatus.value = true;
+  try {
+    await updateOrderStatus(orderId.value, { orderStatus: nextOrderStatus.value });
+    ElMessage.success(t('order.manage.updateSuccess'));
+    await loadDetail();
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : t('common.requestFailed'));
+  } finally {
+    savingOrderStatus.value = false;
+  }
+}
+
+async function submitPaymentStatus() {
+  if (!detail.value || !nextPaymentStatus.value || nextPaymentStatus.value === detail.value.paymentStatus) {
+    return;
+  }
+  savingPaymentStatus.value = true;
+  try {
+    await updateOrderPaymentStatus(orderId.value, { paymentStatus: nextPaymentStatus.value });
+    ElMessage.success(t('order.manage.updateSuccess'));
+    await loadDetail();
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : t('common.requestFailed'));
+  } finally {
+    savingPaymentStatus.value = false;
+  }
+}
+
+async function submitCompleteOrder() {
+  if (!detail.value || detail.value.orderStatus === 'COMPLETED' || detail.value.paymentStatus !== 'PAID') {
+    return;
+  }
+  completingOrder.value = true;
+  try {
+    await completeOrder(orderId.value);
+    ElMessage.success(t('order.manage.updateSuccess'));
+    await loadDetail();
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : t('common.requestFailed'));
+  } finally {
+    completingOrder.value = false;
   }
 }
 
