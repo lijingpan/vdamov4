@@ -39,6 +39,34 @@ export interface DiscountPayload {
   remark?: string;
 }
 
+function normalizeDateTime(value: unknown): string {
+  const raw = asString(value).trim();
+  if (!raw) {
+    return '';
+  }
+
+  const normalized = raw.replace('T', ' ');
+  return normalized.length >= 19 ? normalized.slice(0, 19) : normalized;
+}
+
+function toApiDateTime(value?: string): string | undefined {
+  const raw = value?.trim();
+  if (!raw) {
+    return undefined;
+  }
+
+  const normalized = raw.length === 16 ? `${raw}:00` : raw;
+  return normalized.replace(' ', 'T');
+}
+
+function toDiscountRequestPayload(payload: DiscountPayload): DiscountPayload {
+  return {
+    ...payload,
+    startTime: toApiDateTime(payload.startTime),
+    endTime: toApiDateTime(payload.endTime),
+  };
+}
+
 function asRecord(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object') {
     return {};
@@ -93,8 +121,8 @@ function toDiscountSummary(item: unknown): DiscountSummary {
     ),
     stackable: asBoolean(source.stackable || source.allowStack || source.canStack),
     enabled: asBoolean(source.enabled || source.active || source.status),
-    startTime: asString(source.startTime || source.effectiveFrom || source.startAt),
-    endTime: asString(source.endTime || source.effectiveTo || source.endAt),
+    startTime: normalizeDateTime(source.startTime || source.effectiveFrom || source.startAt),
+    endTime: normalizeDateTime(source.endTime || source.effectiveTo || source.endAt),
     remark: asString(source.remark || source.note),
   };
 }
@@ -111,7 +139,7 @@ export async function fetchDiscounts(query?: DiscountQuery): Promise<DiscountSum
 export async function createDiscount(payload: DiscountPayload): Promise<DiscountSummary> {
   const raw = await request<unknown>('/api/v1/discounts', {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: JSON.stringify(toDiscountRequestPayload(payload)),
   });
   return toDiscountSummary(raw);
 }
@@ -119,7 +147,7 @@ export async function createDiscount(payload: DiscountPayload): Promise<Discount
 export async function updateDiscount(id: number, payload: DiscountPayload): Promise<DiscountSummary> {
   const raw = await request<unknown>(`/api/v1/discounts/${id}`, {
     method: 'PUT',
-    body: JSON.stringify(payload),
+    body: JSON.stringify(toDiscountRequestPayload(payload)),
   });
   return toDiscountSummary(raw);
 }
