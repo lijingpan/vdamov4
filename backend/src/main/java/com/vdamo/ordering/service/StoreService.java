@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.vdamo.ordering.common.exception.BadRequestException;
 import com.vdamo.ordering.common.exception.NotFoundException;
 import com.vdamo.ordering.common.support.IdGenerator;
+import com.vdamo.ordering.entity.DiscountEntity;
 import com.vdamo.ordering.entity.StoreEntity;
 import com.vdamo.ordering.entity.SysUserStoreEntity;
 import com.vdamo.ordering.entity.MemberEntity;
@@ -13,6 +14,7 @@ import com.vdamo.ordering.entity.ProductEntity;
 import com.vdamo.ordering.entity.StoreDeviceEntity;
 import com.vdamo.ordering.entity.TableAreaEntity;
 import com.vdamo.ordering.entity.TableEntity;
+import com.vdamo.ordering.mapper.DiscountMapper;
 import com.vdamo.ordering.mapper.MemberMapper;
 import com.vdamo.ordering.mapper.OrderMapper;
 import com.vdamo.ordering.mapper.ProductCategoryMapper;
@@ -46,6 +48,7 @@ public class StoreService {
     private final MemberMapper memberMapper;
     private final ProductMapper productMapper;
     private final ProductCategoryMapper productCategoryMapper;
+    private final DiscountMapper discountMapper;
     private final TableMapper tableMapper;
     private final TableAreaMapper tableAreaMapper;
     private final OrderMapper orderMapper;
@@ -59,6 +62,7 @@ public class StoreService {
             MemberMapper memberMapper,
             ProductMapper productMapper,
             ProductCategoryMapper productCategoryMapper,
+            DiscountMapper discountMapper,
             TableMapper tableMapper,
             TableAreaMapper tableAreaMapper,
             OrderMapper orderMapper,
@@ -71,6 +75,7 @@ public class StoreService {
         this.memberMapper = memberMapper;
         this.productMapper = productMapper;
         this.productCategoryMapper = productCategoryMapper;
+        this.discountMapper = discountMapper;
         this.tableMapper = tableMapper;
         this.tableAreaMapper = tableAreaMapper;
         this.orderMapper = orderMapper;
@@ -169,6 +174,9 @@ public class StoreService {
         assertNoBindings(
                 productCategoryMapper.selectCount(new LambdaQueryWrapper<ProductCategoryEntity>().eq(ProductCategoryEntity::getStoreId, storeId)),
                 "Store has product categories and cannot be deleted");
+        assertNoBindings(
+                discountMapper.selectCount(new LambdaQueryWrapper<DiscountEntity>().eq(DiscountEntity::getStoreId, storeId)),
+                "Store has discounts and cannot be deleted");
         assertNoBindings(
                 tableMapper.selectCount(new LambdaQueryWrapper<TableEntity>().eq(TableEntity::getStoreId, storeId)),
                 "Store has tables and cannot be deleted");

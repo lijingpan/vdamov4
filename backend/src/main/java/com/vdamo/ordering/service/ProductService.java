@@ -133,11 +133,12 @@ public class ProductService {
         permissionService.assertStoreAccess(request.storeId());
         requireStore(request.storeId());
 
+        PreparedProductPayload payload = preparePayload(request);
         ProductEntity entity = new ProductEntity();
         entity.setId(idGenerator.nextId());
-        applyProductValues(entity, request);
+        applyProductValues(entity, payload);
         productMapper.insert(entity);
-        replaceChildren(entity.getId(), entity.getStoreId(), request);
+        replaceChildren(entity.getId(), entity.getStoreId(), payload);
         return getSummary(entity.getId());
     }
 
@@ -146,11 +147,12 @@ public class ProductService {
         permissionService.assertStoreAccess(request.storeId());
         requireStore(request.storeId());
 
+        PreparedProductPayload payload = preparePayload(request);
         ProductEntity entity = requireProduct(id);
         permissionService.assertStoreAccess(entity.getStoreId());
-        applyProductValues(entity, request);
+        applyProductValues(entity, payload);
         productMapper.updateById(entity);
-        replaceChildren(entity.getId(), entity.getStoreId(), request);
+        replaceChildren(entity.getId(), entity.getStoreId(), payload);
         return getSummary(entity.getId());
     }
 
@@ -187,46 +189,28 @@ public class ProductService {
         productMapper.deleteById(entity.getId());
     }
 
-    private void applyProductValues(ProductEntity entity, ProductUpsertRequest request) {
-        String productType = normalizeProductType(request.productType());
-        String specMode = normalizeSpecMode(request.specMode());
-        String categoryCode = request.categoryCode().trim().toUpperCase(Locale.ROOT);
+    private void applyProductValues(ProductEntity entity, PreparedProductPayload payload) {
+        validateProductUnique(entity.getId(), payload.storeId(), payload.code());
+        requireCategory(payload.storeId(), payload.categoryCode());
 
-        validateProductUnique(entity.getId(), request.storeId(), request.code().trim());
-        requireCategory(request.storeId(), categoryCode);
-        validateRequest(request, productType, specMode);
-
-        entity.setStoreId(request.storeId());
-        entity.setName(request.name().trim());
-        entity.setCode(request.code().trim());
-        entity.setCategoryCode(categoryCode);
-        entity.setProductType(productType);
-        entity.setSpecMode(specMode);
-        entity.setDescription(StringUtils.hasText(request.description()) ? request.description().trim() : null);
-        entity.setAttrEnabled(Boolean.TRUE.equals(request.attrEnabled()));
-        entity.setMaterialEnabled(Boolean.TRUE.equals(request.materialEnabled()));
-        entity.setWeighedEnabled(Boolean.TRUE.equals(request.weighedEnabled()) || "WEIGHED".equals(productType));
-        entity.setPriceInCent(deriveDisplayPrice(request.skus()));
-        entity.setActive(request.active());
+        entity.setStoreId(payload.storeId());
+        entity.setName(payload.name());
+        entity.setCode(payload.code());
+        entity.setCategoryCode(payload.categoryCode());
+        entity.setProductType(payload.productType());
+        entity.setSpecMode(payload.specMode());
+        entity.setDescription(payload.description());
+        entity.setAttrEnabled(payload.attrEnabled());
+        entity.setMaterialEnabled(payload.materialEnabled());
+        entity.setWeighedEnabled(payload.weighedEnabled());
+        entity.setPriceInCent(deriveDisplayPrice(payload.skus()));
+        entity.setActive(payload.active());
         entity.setUpdater(permissionService.currentUser().username());
     }
 
-    private void validateRequest(ProductUpsertRequest request, String productType, String specMode) {
-        if (request.skus().isEmpty()) {
-            throw new BadRequestException("At least one SKU is required");
-        }
-        if ("SINGLE".equals(specMode) && request.skus().size() != 1) {
-            throw new BadRequestException("Single-spec product must contain exactly one SKU");
-        }
-        if ("MULTI".equals(specMode) && request.specs().isEmpty()) {
-            throw new BadRequestException("Multi-spec product must contain at least one spec group");
-        }
-        if ("SINGLE".equals(specMode) && !request.specs().isEmpty()) {
-            throw new BadRequestException("Single-spec product cannot contain spec groups");
-        }
-
+    private void validateSpecs(List<ProductUpsertRequest.SpecItem> specs) {
         Set<String> specNames = new HashSet<>();
-        for (ProductUpsertRequest.SpecItem spec : request.specs()) {
+        for (ProductUpsertRequest.SpecItem spec : specs) {
             String specName = requireText(spec.name(), "Spec name is required");
             if (!specNames.add(specName.toUpperCase(Locale.ROOT))) {
                 throw new BadRequestException("Duplicate spec name: " + specName);
@@ -242,9 +226,14 @@ public class ProductService {
                 }
             }
         }
+    }
 
+    private void validateSkus(List<ProductUpsertRequest.SkuItem> skus) {
+        if (skus.isEmpty()) {
+            throw new BadRequestException("At least one SKU is required");
+        }
         Set<String> skuKeys = new HashSet<>();
-        for (ProductUpsertRequest.SkuItem sku : request.skus()) {
+        for (ProductUpsertRequest.SkuItem sku : skus) {
             if (sku.priceInCent() == null || sku.priceInCent() < 0) {
                 throw new BadRequestException("SKU price must be greater than or equal to 0");
             }
@@ -268,16 +257,12 @@ public class ProductService {
             if (!skuKeys.add(specKey)) {
                 throw new BadRequestException("Duplicate SKU spec key: " + specKey);
             }
-            if ("MULTI".equals(specMode)) {
-                requireText(sku.specName(), "SKU spec name is required");
-            }
-            if ("WEIGHED".equals(productType) && (sku.weightUnitGram() == null || sku.weightUnitGram() <= 0)) {
-                throw new BadRequestException("Weighed product SKU must contain weight unit");
-            }
         }
+    }
 
+    private void validateAttrs(List<ProductUpsertRequest.AttrItem> attrs) {
         Set<String> attrNames = new HashSet<>();
-        for (ProductUpsertRequest.AttrItem attr : request.attrs()) {
+        for (ProductUpsertRequest.AttrItem attr : attrs) {
             String attrName = requireText(attr.name(), "Attribute name is required");
             if (!attrNames.add(attrName.toUpperCase(Locale.ROOT))) {
                 throw new BadRequestException("Duplicate attribute name: " + attrName);
@@ -297,6 +282,194 @@ public class ProductService {
                 throw new BadRequestException("Attribute can only have one default value");
             }
         }
+    }
+
+    private PreparedProductPayload preparePayload(ProductUpsertRequest request) {
+        List<ProductUpsertRequest.SpecItem> specs = resolveSpecs(request);
+        List<ProductUpsertRequest.AttrItem> attrs = request.attrs();
+
+        String productType = resolveProductType(request.productType());
+        String specMode = resolveSpecMode(request.specMode(), specs);
+        int requestPrice = normalizeRequestPrice(request.priceInCent());
+        List<ProductUpsertRequest.SkuItem> skus = resolveSkus(specs, request.skus(), specMode, requestPrice);
+
+        validateSpecs(specs);
+        validateSkus(skus);
+        validateAttrs(attrs);
+
+        return new PreparedProductPayload(
+                request.storeId(),
+                request.name().trim(),
+                request.code().trim(),
+                request.categoryCode().trim().toUpperCase(Locale.ROOT),
+                productType,
+                specMode,
+                StringUtils.hasText(request.description()) ? request.description().trim() : null,
+                request.attrEnabled() == null ? !attrs.isEmpty() : request.attrEnabled(),
+                Boolean.TRUE.equals(request.materialEnabled()),
+                Boolean.TRUE.equals(request.weighedEnabled()),
+                request.active(),
+                specs,
+                skus,
+                attrs
+        );
+    }
+
+    private List<ProductUpsertRequest.SpecItem> resolveSpecs(ProductUpsertRequest request) {
+        List<ProductUpsertRequest.SpecItem> specs = request.specs();
+        if (!request.rules().isEmpty()) {
+            specs = request.rules().stream()
+                    .map(rule -> new ProductUpsertRequest.SpecItem(
+                            rule.name(),
+                            rule.sortOrder(),
+                            rule.values().stream()
+                                    .map(value -> new ProductUpsertRequest.SpecValueItem(value.name(), value.sortOrder()))
+                                    .toList()))
+                    .toList();
+        }
+        return specs;
+    }
+
+    private String resolveProductType(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "NORMAL";
+        }
+        return normalizeProductType(value);
+    }
+
+    private String resolveSpecMode(String specMode, List<ProductUpsertRequest.SpecItem> specs) {
+        boolean hasRules = !specs.isEmpty();
+        if (!StringUtils.hasText(specMode)) {
+            return hasRules ? "MULTI" : "SINGLE";
+        }
+        String normalized = normalizeSpecMode(specMode);
+        if (hasRules && "SINGLE".equals(normalized)) {
+            return "MULTI";
+        }
+        if (!hasRules && "MULTI".equals(normalized)) {
+            return "SINGLE";
+        }
+        return normalized;
+    }
+
+    private int normalizeRequestPrice(Integer priceInCent) {
+        if (priceInCent == null) {
+            return 0;
+        }
+        if (priceInCent < 0) {
+            throw new BadRequestException("Product price must be greater than or equal to 0");
+        }
+        return priceInCent;
+    }
+
+    private List<ProductUpsertRequest.SkuItem> resolveSkus(
+            List<ProductUpsertRequest.SpecItem> specs,
+            List<ProductUpsertRequest.SkuItem> providedSkus,
+            String specMode,
+            int requestPriceInCent
+    ) {
+        if (!providedSkus.isEmpty()) {
+            List<ProductUpsertRequest.SkuItem> normalizedSkus = new ArrayList<>();
+            for (int index = 0; index < providedSkus.size(); index++) {
+                ProductUpsertRequest.SkuItem item = providedSkus.get(index);
+                int price = item.priceInCent() == null ? requestPriceInCent : item.priceInCent();
+                if (price < 0) {
+                    throw new BadRequestException("SKU price must be greater than or equal to 0");
+                }
+                String defaultSpecKey = "SINGLE".equals(specMode) ? "DEFAULT" : "AUTO_" + (index + 1);
+                String defaultSpecName = "SINGLE".equals(specMode) ? "Default" : "Spec " + (index + 1);
+                normalizedSkus.add(new ProductUpsertRequest.SkuItem(
+                        StringUtils.hasText(item.specKey()) ? item.specKey().trim() : defaultSpecKey,
+                        StringUtils.hasText(item.specName()) ? item.specName().trim() : defaultSpecName,
+                        StringUtils.hasText(item.skuCode()) ? item.skuCode().trim() : null,
+                        StringUtils.hasText(item.barcode()) ? item.barcode().trim() : null,
+                        price,
+                        item.linePriceInCent() == null ? 0 : item.linePriceInCent(),
+                        item.costPriceInCent() == null ? 0 : item.costPriceInCent(),
+                        item.boxFeeInCent() == null ? 0 : item.boxFeeInCent(),
+                        item.stockQty() == null ? 0 : item.stockQty(),
+                        Boolean.TRUE.equals(item.autoReplenish()),
+                        item.weightUnitGram(),
+                        item.sortOrder() == null ? index + 1 : item.sortOrder(),
+                        item.active() == null || item.active()
+                ));
+            }
+            return normalizedSkus;
+        }
+
+        if (specs.isEmpty()) {
+            return List.of(new ProductUpsertRequest.SkuItem(
+                    "DEFAULT",
+                    "Default",
+                    null,
+                    null,
+                    requestPriceInCent,
+                    0,
+                    0,
+                    0,
+                    0,
+                    false,
+                    null,
+                    1,
+                    true
+            ));
+        }
+
+        List<SpecCombination> combinations = buildSpecCombinations(specs);
+        List<ProductUpsertRequest.SkuItem> generated = new ArrayList<>();
+        for (int index = 0; index < combinations.size(); index++) {
+            SpecCombination combination = combinations.get(index);
+            generated.add(new ProductUpsertRequest.SkuItem(
+                    combination.specKey(),
+                    combination.specName(),
+                    null,
+                    null,
+                    requestPriceInCent,
+                    0,
+                    0,
+                    0,
+                    0,
+                    false,
+                    null,
+                    index + 1,
+                    true
+            ));
+        }
+        return generated;
+    }
+
+    private List<SpecCombination> buildSpecCombinations(List<ProductUpsertRequest.SpecItem> specs) {
+        List<SpecCombination> combinations = new ArrayList<>();
+        combinations.add(new SpecCombination("", ""));
+
+        for (ProductUpsertRequest.SpecItem spec : specs) {
+            String specName = requireText(spec.name(), "Spec name is required");
+            List<ProductUpsertRequest.SpecValueItem> values = spec.values();
+            if (values.isEmpty()) {
+                throw new BadRequestException("Each spec must contain at least one value");
+            }
+
+            List<SpecCombination> next = new ArrayList<>();
+            for (SpecCombination base : combinations) {
+                for (ProductUpsertRequest.SpecValueItem value : values) {
+                    String valueName = requireText(value.name(), "Spec value name is required");
+                    String nextKeyPart = normalizeSpecKeyPart(specName) + ":" + valueName;
+                    String nextSpecKey = StringUtils.hasText(base.specKey())
+                            ? base.specKey() + "|" + nextKeyPart
+                            : nextKeyPart;
+                    String nextSpecName = StringUtils.hasText(base.specName())
+                            ? base.specName() + " / " + valueName
+                            : valueName;
+                    next.add(new SpecCombination(nextSpecKey, nextSpecName));
+                }
+            }
+            combinations = next;
+        }
+        return combinations;
+    }
+
+    private String normalizeSpecKeyPart(String value) {
+        return value.trim().toLowerCase(Locale.ROOT).replaceAll("\\s+", "_");
     }
 
     private int deriveDisplayPrice(List<ProductUpsertRequest.SkuItem> skus) {
@@ -330,7 +503,7 @@ public class ProductService {
         return value.trim();
     }
 
-    private void replaceChildren(Long productId, Long storeId, ProductUpsertRequest request) {
+    private void replaceChildren(Long productId, Long storeId, PreparedProductPayload payload) {
         productSpecValueMapper.delete(new LambdaQueryWrapper<ProductSpecValueEntity>()
                 .eq(ProductSpecValueEntity::getProductId, productId));
         productSpecMapper.delete(new LambdaQueryWrapper<ProductSpecEntity>()
@@ -342,9 +515,9 @@ public class ProductService {
         productSkuMapper.delete(new LambdaQueryWrapper<ProductSkuEntity>()
                 .eq(ProductSkuEntity::getProductId, productId));
 
-        persistSpecs(productId, storeId, request.specs());
-        persistAttrs(productId, storeId, request.attrs());
-        persistSkus(productId, storeId, request.skus());
+        persistSpecs(productId, storeId, payload.specs());
+        persistAttrs(productId, storeId, payload.attrs());
+        persistSkus(productId, storeId, payload.skus());
     }
 
     private void persistSpecs(Long productId, Long storeId, List<ProductUpsertRequest.SpecItem> specs) {
@@ -635,6 +808,30 @@ public class ProductService {
             int minPriceInCent,
             int maxPriceInCent,
             int skuCount
+    ) {
+    }
+
+    private record SpecCombination(
+            String specKey,
+            String specName
+    ) {
+    }
+
+    private record PreparedProductPayload(
+            Long storeId,
+            String name,
+            String code,
+            String categoryCode,
+            String productType,
+            String specMode,
+            String description,
+            boolean attrEnabled,
+            boolean materialEnabled,
+            boolean weighedEnabled,
+            boolean active,
+            List<ProductUpsertRequest.SpecItem> specs,
+            List<ProductUpsertRequest.SkuItem> skus,
+            List<ProductUpsertRequest.AttrItem> attrs
     ) {
     }
 }

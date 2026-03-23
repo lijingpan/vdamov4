@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import DashboardView from '@/views/DashboardView.vue';
 import DeviceView from '@/views/DeviceView.vue';
+import DiscountView from '@/views/DiscountView.vue';
 import LoginView from '@/views/LoginView.vue';
 import MenuView from '@/views/MenuView.vue';
 import MemberView from '@/views/MemberView.vue';
@@ -62,6 +63,11 @@ const routes: RouteRecordRaw[] = [
         path: 'sales-reports',
         name: 'sales-reports',
         component: SalesReportView,
+      },
+      {
+        path: 'discounts',
+        name: 'discounts',
+        component: DiscountView,
       },
       {
         path: 'orders/:id',

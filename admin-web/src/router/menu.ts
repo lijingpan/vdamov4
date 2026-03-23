@@ -60,6 +60,12 @@ export const menuItems: MenuItem[] = [
     i18nKey: 'menu.salesReports',
   },
   {
+    key: 'discounts',
+    path: '/discounts',
+    icon: Tickets,
+    i18nKey: 'menu.discounts',
+  },
+  {
     key: 'devices',
     path: '/devices',
     icon: Platform,

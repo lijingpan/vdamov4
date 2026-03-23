@@ -53,6 +53,15 @@ INSERT INTO da_product_category (id, store_id, category_name, category_code, sor
 (1303, 54, 'Set Meal', 'SET_MEAL', 10, TRUE),
 (1304, 54, 'Seafood', 'SEAFOOD', 20, FALSE);
 
+INSERT INTO da_discount (
+    id, store_id, name, code, discount_type, amount_type, amount_value, threshold_amount_in_cent,
+    stackable, enabled, start_time, end_time, remark
+) VALUES
+(4101, 2, 'Member Drink 10% Off', 'MEMBER_DRINK_10', 'MEMBER_PRICE', 'PERCENT', 10, 0, FALSE, TRUE,
+ DATEADD('DAY', -5, CURRENT_TIMESTAMP), DATEADD('DAY', 30, CURRENT_TIMESTAMP), 'Member-only discount for drinks'),
+(4102, 54, 'Order 20 THB Off 300', 'ORDER_20_OFF_300', 'FULL_REDUCTION', 'FIXED', 2000, 30000, TRUE, TRUE,
+ DATEADD('DAY', -2, CURRENT_TIMESTAMP), DATEADD('DAY', 15, CURRENT_TIMESTAMP), 'Order-level full reduction');
+
 INSERT INTO da_table (id, store_id, area_name, table_name, capacity, status) VALUES
 (2101, 2, 'Hall A', 'A01', 4, 'IDLE'),
 (2102, 2, 'Hall A', 'A02', 6, 'IN_USE'),
@@ -126,6 +135,7 @@ INSERT INTO da_menu (id, parent_id, name, menu_type, route, permission_code, sor
 (11, NULL, 'Role', 'MENU', '/roles', 'role:view', 11),
 (12, NULL, 'User', 'MENU', '/users', 'user:view', 12),
 (13, NULL, 'Menu', 'MENU', '/menus', 'menu:view', 13),
+(14, NULL, 'Discount', 'MENU', '/discounts', 'discount:view', 14),
 (1101, 11, 'Role Create', 'BUTTON', '', 'role:create', 111),
 (1102, 11, 'Role Update', 'BUTTON', '', 'role:update', 112),
 (1103, 11, 'Role Delete', 'BUTTON', '', 'role:delete', 113),
@@ -165,7 +175,11 @@ INSERT INTO da_menu (id, parent_id, name, menu_type, route, permission_code, sor
 (2101, 6, 'Sales Report Export', 'BUTTON', '', 'sales.report:export', 61),
 (2001, 10, 'Member Create', 'BUTTON', '', 'member:create', 101),
 (2002, 10, 'Member Update', 'BUTTON', '', 'member:update', 102),
-(2003, 10, 'Member Delete', 'BUTTON', '', 'member:delete', 103);
+(2003, 10, 'Member Delete', 'BUTTON', '', 'member:delete', 103),
+(2201, 14, 'Discount Create', 'BUTTON', '', 'discount:create', 141),
+(2202, 14, 'Discount Update', 'BUTTON', '', 'discount:update', 142),
+(2203, 14, 'Discount Enable', 'BUTTON', '', 'discount:enable', 143),
+(2204, 14, 'Discount Delete', 'BUTTON', '', 'discount:delete', 144);
 
 INSERT INTO da_user_role (id, user_id, role_id) VALUES
 (1, 1, 1),
@@ -184,6 +198,7 @@ INSERT INTO da_role_menu (id, role_id, menu_id) VALUES
 (72, 1, 1951), (73, 1, 1952), (74, 1, 1953),
 (78, 1, 2101),
 (65, 1, 2001), (66, 1, 2002), (86, 1, 2003),
+(93, 1, 14), (94, 1, 2201), (95, 1, 2202), (96, 1, 2203), (97, 1, 2204),
 (14, 2, 1), (15, 2, 2), (16, 2, 3), (17, 2, 4), (18, 2, 5), (19, 2, 6),
 (20, 2, 7), (21, 2, 8), (22, 2, 9), (23, 2, 10),
 (42, 2, 1402), (43, 2, 1403),
@@ -194,7 +209,8 @@ INSERT INTO da_role_menu (id, role_id, menu_id) VALUES
 (67, 2, 1901), (68, 2, 1902), (69, 2, 1903), (91, 2, 1904),
 (75, 2, 1951), (76, 2, 1952), (77, 2, 1953),
 (79, 2, 2101),
-(70, 2, 2001), (71, 2, 2002), (92, 2, 2003);
+(70, 2, 2001), (71, 2, 2002), (92, 2, 2003),
+(98, 2, 14), (99, 2, 2201), (100, 2, 2202), (101, 2, 2203), (102, 2, 2204);
 
 INSERT INTO da_user_store (id, user_id, store_id) VALUES
 (1, 1, 2), (2, 1, 54), (3, 2, 54);

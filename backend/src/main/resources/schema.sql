@@ -171,6 +171,28 @@ CREATE TABLE da_product_category (
     test_flag INT DEFAULT 0
 );
 
+CREATE TABLE da_discount (
+    id BIGINT PRIMARY KEY,
+    store_id BIGINT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    code VARCHAR(64) NOT NULL,
+    discount_type VARCHAR(32) NOT NULL,
+    amount_type VARCHAR(16) NOT NULL,
+    amount_value INT NOT NULL,
+    threshold_amount_in_cent INT NOT NULL,
+    stackable BOOLEAN NOT NULL,
+    enabled BOOLEAN NOT NULL,
+    start_time TIMESTAMP,
+    end_time TIMESTAMP,
+    remark VARCHAR(255),
+    creator VARCHAR(32) DEFAULT 'system',
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updater VARCHAR(32) DEFAULT 'system',
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    del_flag INT DEFAULT 1,
+    test_flag INT DEFAULT 0
+);
+
 CREATE TABLE da_table (
     id BIGINT PRIMARY KEY,
     store_id BIGINT NOT NULL,

@@ -13,23 +13,24 @@ public record ProductUpsertRequest(
         String code,
         @NotBlank(message = "Product category code is required")
         String categoryCode,
-        @NotBlank(message = "Product type is required")
         String productType,
-        @NotBlank(message = "Product spec mode is required")
         String specMode,
         String description,
-        @NotNull(message = "Product attribute flag is required")
         Boolean attrEnabled,
-        @NotNull(message = "Product material flag is required")
         Boolean materialEnabled,
-        @NotNull(message = "Product weighed flag is required")
         Boolean weighedEnabled,
         @NotNull(message = "Product active flag is required")
         Boolean active,
+        Integer priceInCent,
+        List<RuleItem> rules,
         List<SpecItem> specs,
         List<SkuItem> skus,
         List<AttrItem> attrs
 ) {
+    public List<RuleItem> rules() {
+        return rules == null ? List.of() : rules;
+    }
+
     public List<SpecItem> specs() {
         return specs == null ? List.of() : specs;
     }
@@ -53,6 +54,22 @@ public record ProductUpsertRequest(
     }
 
     public record SpecValueItem(
+            String name,
+            Integer sortOrder
+    ) {
+    }
+
+    public record RuleItem(
+            String name,
+            Integer sortOrder,
+            List<RuleValueItem> values
+    ) {
+        public List<RuleValueItem> values() {
+            return values == null ? List.of() : values;
+        }
+    }
+
+    public record RuleValueItem(
             String name,
             Integer sortOrder
     ) {

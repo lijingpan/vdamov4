@@ -1,5 +1,6 @@
 import { createI18n } from 'vue-i18n';
 import enUS from './messages/en-US';
+import { discountMessages } from './messages/discount';
 import { managementMessages } from './messages/management';
 import { masterDataMessages } from './messages/master-data';
 import { menuTypeMessages } from './messages/menu-type';
@@ -56,7 +57,10 @@ const messages = {
         salesReportMessages['zh-CN'] as LocaleMessageObject,
         menuTypeMessages['zh-CN'] as LocaleMessageObject,
       ),
-      productConfigMessages['zh-CN'] as LocaleMessageObject,
+      mergeLocaleMessages(
+        productConfigMessages['zh-CN'] as LocaleMessageObject,
+        discountMessages['zh-CN'] as LocaleMessageObject,
+      ),
     ),
   ),
   'en-US': mergeLocaleMessages(
@@ -75,7 +79,10 @@ const messages = {
         salesReportMessages['en-US'] as LocaleMessageObject,
         menuTypeMessages['en-US'] as LocaleMessageObject,
       ),
-      productConfigMessages['en-US'] as LocaleMessageObject,
+      mergeLocaleMessages(
+        productConfigMessages['en-US'] as LocaleMessageObject,
+        discountMessages['en-US'] as LocaleMessageObject,
+      ),
     ),
   ),
   'th-TH': mergeLocaleMessages(
@@ -94,7 +101,10 @@ const messages = {
         salesReportMessages['th-TH'] as LocaleMessageObject,
         menuTypeMessages['th-TH'] as LocaleMessageObject,
       ),
-      productConfigMessages['th-TH'] as LocaleMessageObject,
+      mergeLocaleMessages(
+        productConfigMessages['th-TH'] as LocaleMessageObject,
+        discountMessages['th-TH'] as LocaleMessageObject,
+      ),
     ),
   ),
 } as Record<string, any>;
