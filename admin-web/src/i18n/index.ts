@@ -6,6 +6,7 @@ import { masterDataMessages } from './messages/master-data';
 import { menuTypeMessages } from './messages/menu-type';
 import { orderDetailMessages } from './messages/order-detail';
 import { productConfigMessages } from './messages/product-config';
+import { productSimpleMessages } from './messages/product-simple';
 import { salesReportMessages } from './messages/sales-report';
 import { storeLocationMessages } from './messages/store-location';
 import thTH from './messages/th-TH';
@@ -58,7 +59,10 @@ const messages = {
         menuTypeMessages['zh-CN'] as LocaleMessageObject,
       ),
       mergeLocaleMessages(
-        productConfigMessages['zh-CN'] as LocaleMessageObject,
+        mergeLocaleMessages(
+          productConfigMessages['zh-CN'] as LocaleMessageObject,
+          productSimpleMessages['zh-CN'] as LocaleMessageObject,
+        ),
         discountMessages['zh-CN'] as LocaleMessageObject,
       ),
     ),
@@ -80,7 +84,10 @@ const messages = {
         menuTypeMessages['en-US'] as LocaleMessageObject,
       ),
       mergeLocaleMessages(
-        productConfigMessages['en-US'] as LocaleMessageObject,
+        mergeLocaleMessages(
+          productConfigMessages['en-US'] as LocaleMessageObject,
+          productSimpleMessages['en-US'] as LocaleMessageObject,
+        ),
         discountMessages['en-US'] as LocaleMessageObject,
       ),
     ),
@@ -102,7 +109,10 @@ const messages = {
         menuTypeMessages['th-TH'] as LocaleMessageObject,
       ),
       mergeLocaleMessages(
-        productConfigMessages['th-TH'] as LocaleMessageObject,
+        mergeLocaleMessages(
+          productConfigMessages['th-TH'] as LocaleMessageObject,
+          productSimpleMessages['th-TH'] as LocaleMessageObject,
+        ),
         discountMessages['th-TH'] as LocaleMessageObject,
       ),
     ),
