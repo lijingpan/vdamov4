@@ -124,10 +124,6 @@ public class RoleService {
         return getSummary(entity.getId());
     }
 
-    public RoleSummary getById(Long id) {
-        return getSummary(id);
-    }
-
     public RoleSummary update(Long id, RoleUpsertRequest request) {
         SysRoleEntity entity = requireRole(id);
         if (SUPER_ADMIN_ROLE_CODE.equalsIgnoreCase(entity.getCode())) {

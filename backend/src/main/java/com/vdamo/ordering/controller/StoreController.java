@@ -53,12 +53,6 @@ public class StoreController {
         return ApiResponse.success(messageHelper.get("success.fetch"), storeService.getById(id));
     }
 
-    @GetMapping("/{id}")
-    public ApiResponse<StoreSummary> detail(@PathVariable Long id) {
-        permissionService.assertPermission("store:view");
-        return ApiResponse.success(messageHelper.get("success.fetch"), storeService.getById(id));
-    }
-
     @PostMapping
     public ApiResponse<StoreSummary> create(@Valid @RequestBody StoreUpsertRequest request) {
         permissionService.assertPermission("store:create");
